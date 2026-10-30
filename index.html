@@ -148,6 +148,22 @@ details.others > summary span{font-family:var(--f-body);font-size:13.5px;font-we
 details.others .list{margin-top:12px}
 .cat{font-size:12px;color:var(--muted)}
 
+/* profile dropdowns */
+#profileFields{display:flex;flex-direction:column;gap:16px}
+.pick{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pick .lbl{margin-bottom:0}
+.plist{display:flex;flex-direction:column;gap:6px}
+.plist .lbl{margin-bottom:0}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center}
+.prow.with-level{grid-template-columns:minmax(0,1fr) 96px auto}
+.prow input,.prow .mapnote{grid-column:1/-1}
+.pick input,.prow input{width:100%;background:var(--bg);border:1px solid var(--accent);border-radius:8px;padding:7px 9px}
+.xbtn{border:1px solid var(--line);background:transparent;border-radius:8px;width:32px;height:34px;cursor:pointer;color:var(--muted)}
+.xbtn:hover{color:var(--bad);border-color:var(--bad)}
+.addrow{align-self:flex-start}
+.mapnote{font-size:12px;color:var(--muted)}
+#sample{width:100%}
+
 /* tabs */
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 22px;overflow-x:auto}
 .tabs a{display:inline-flex;gap:8px;align-items:center;padding:10px 14px;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);text-decoration:none;font-weight:600;white-space:nowrap}
@@ -217,14 +233,14 @@ pre.plantext{white-space:pre-wrap;background:var(--bg);border:1px solid var(--li
   <div class="grid">
     <aside class="rail" aria-label="Your profile">
       <div>
-        <span class="lbl">Example profile</span>
-        <div class="seg" id="samples" role="group"></div>
+        <label class="lbl" for="sample">Example profile</label>
+        <select id="sample"></select>
         <p class="hint" id="sampleNote"></p>
       </div>
 
       <div>
         <label class="lbl" for="cv">1 · Paste a CV (optional)</label>
-        <textarea id="cv" placeholder="e.g. BA in Economics, Northwestern. Intern at a retail firm, built Excel reports and wrote SQL queries..."></textarea>
+        <textarea id="cv" maxlength="20000" placeholder="e.g. BA in Economics, Northwestern. Intern at a retail firm, built Excel reports and wrote SQL queries..."></textarea>
         <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">
           <button class="btn" type="button" id="extract">Extract profile</button>
           <span class="hint" style="margin:0">Demo uses keyword matching in place of Claude.</span>
@@ -232,45 +248,8 @@ pre.plantext{white-space:pre-wrap;background:var(--bg);border:1px solid var(--li
         <p class="extracted" id="extracted" hidden></p>
       </div>
       <hr class="sep">
-
-      <div class="two">
-        <div><label class="lbl" for="deg">Highest degree</label>
-          <select id="deg"><option value="0">No degree</option><option value="1">Associate</option><option value="2">Bachelor's</option><option value="3">Master's</option><option value="4">PhD</option></select></div>
-        <div><label class="lbl" for="field">Field</label>
-          <select id="field"></select></div>
-      </div>
-
-      <div>
-        <div class="lblrow"><span class="lbl">Skills</span><button type="button" class="clear" data-clear="skills">Clear</button></div>
-        <div class="legend">Tap to cycle: <span class="chip">none</span><span class="chip" data-level="1">basic</span><span class="chip" data-level="2">advanced</span></div>
-        <div class="chips scroll" id="skills"></div>
-      </div>
-
-      <div class="two">
-        <div><label class="lbl" for="intern">Internships</label><input id="intern" type="number" min="0" max="10"></div>
-        <div><label class="lbl" for="years">Years of work</label><input id="years" type="number" min="0" max="40"></div>
-      </div>
-
-      <div>
-        <span class="lbl">Certifications and licences</span>
-        <div class="chips" id="certs"></div>
-      </div>
-      <hr class="sep">
-
-      <div>
-        <div class="lblrow"><span class="lbl">2 · Job interests</span><button type="button" class="clear" data-clear="interests">Clear</button></div>
-        <p class="hint" style="margin:0 0 8px">Roles in these categories are listed first. Pick none to see all.</p>
-        <div class="chips" id="interests"></div>
-      </div>
-      <div>
-        <div class="lblrow"><span class="lbl">Locations you can work in</span><button type="button" class="clear" data-clear="locs">Clear</button></div>
-        <div class="chips scroll" id="locs"></div>
-      </div>
-      <div>
-        <label class="lbl" for="mode">Work mode</label>
-        <select id="mode"><option value="">Not set</option><option value="any">Any</option><option value="onsite">On-site</option><option value="hybrid">Hybrid</option><option value="remote">Remote</option></select>
-      </div>
-      <p class="hint">Location and work mode are must-have constraints. Leave them unset and matching roles will ask you to confirm. Remote roles match any location.</p>
+      <div id="profileFields"></div>
+      <p class="hint">Pick "Other…" in any list to type your own answer. Location and work mode are must-have constraints: leave them unset and matching roles ask you to confirm. Remote roles match any location.</p>
     </aside>
 
     <main id="main">
@@ -321,57 +300,148 @@ const SAMPLES = {
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const state = {open:null, hidden:new Set(), review:new Set(), othersOpen:false,
-  skills:{}, certs:new Set(), interests:new Set(), locs:new Set(),
-  saved:new Set(), moves:[], checked:null};
+  prof:null, saved:new Set(), moves:[], checked:null};
 /* saved roles and planned moves stay in this browser only */
 function loadStore(){ try{ const d=JSON.parse(localStorage.getItem('cp_plan')||'{}'); state.saved=new Set((d.saved||[]).filter(id=>JOBS.some(j=>j.id===id))); state.moves=d.moves||[]; }catch(e){} }
 function saveStore(){ try{ localStorage.setItem('cp_plan', JSON.stringify({saved:[...state.saved], moves:state.moves})); }catch(e){} }
 loadStore();
 
-/* ---------- build form ---------- */
+/* ---------- build form: every profile field is a dropdown with an "Other…" choice ---------- */
 $('#protoNote').textContent = `Prototype · ${JOBS.length} simulated US postings · ${Object.keys(TYPES).length} job categories · snapshot ${fmt(SNAPSHOT)}`;
-$('#samples').innerHTML = Object.keys(SAMPLES).map(k=>`<button type="button" data-s="${k}" aria-pressed="false">${k}</button>`).join('');
-$('#field').innerHTML = FIELDS.map(f=>`<option value="${f}">${f[0].toUpperCase()+f.slice(1)}</option>`).join('');
-$('#skills').innerHTML = SKILLS.map(s=>`<button type="button" class="chip" data-skill="${esc(s)}" data-level="0">${esc(s)}</button>`).join('');
-$('#certs').innerHTML = CERTS.map(c=>`<button type="button" class="chip" data-cert="${esc(c)}" aria-pressed="false">${esc(c)}</button>`).join('');
-$('#interests').innerHTML = Object.entries(TYPES).map(([k,v])=>`<button type="button" class="chip" data-int="${k}" aria-pressed="false">${esc(v)}</button>`).join('');
-$('#locs').innerHTML = [ANYWHERE,...CITIES].map(c=>`<button type="button" class="chip" data-loc="${esc(c)}" aria-pressed="false">${esc(c)}</button>`).join('');
+const BLANK = {note:'An empty profile. Fill it in from the dropdowns, or paste a CV above.',degree:0,field:'other',skills:{},internships:0,years:0,certs:[],interests:[],locs:[],mode:''};
+$('#sample').innerHTML = Object.keys(SAMPLES).map(k=>`<option value="${k}">${k}</option>`).join('')+'<option value="__blank">Blank profile (start from scratch)</option>';
 
-function syncChips(){
-  document.querySelectorAll('[data-skill]').forEach(b=>{const l=state.skills[b.dataset.skill]||0; b.dataset.level=l; b.innerHTML=esc(b.dataset.skill)+(l?`<small>${l===2?'adv':'basic'}</small>`:''); b.setAttribute('aria-label',`${b.dataset.skill}: ${LVN[l]}`);});
-  document.querySelectorAll('[data-cert]').forEach(b=>b.setAttribute('aria-pressed',state.certs.has(b.dataset.cert)));
-  document.querySelectorAll('[data-int]').forEach(b=>b.setAttribute('aria-pressed',state.interests.has(b.dataset.int)));
-  document.querySelectorAll('[data-loc]').forEach(b=>b.setAttribute('aria-pressed',state.locs.has(b.dataset.loc)));
+const OTHER='__other';
+const OPTS = {
+  degree:[['0','No degree'],['1','Associate'],['2',"Bachelor's"],['3',"Master's"],['4','PhD']],
+  field:FIELDS.filter(f=>f!=='other').map(f=>[f,cap(f)]).concat([['other','Not listed / none']]),
+  internships:[0,1,2,3,4,5].map(n=>[String(n),String(n)]),
+  years:[0,1,2,3,4,5,6,7,8,9,10].map(n=>[String(n),n===10?'10 or more':String(n)]),
+  mode:[['','Not set'],['any','Any'],['onsite','On-site'],['hybrid','Hybrid'],['remote','Remote']],
+  skills:SKILLS.map(s=>[s,s]), certs:CERTS.map(c=>[c,c]),
+  interests:Object.entries(TYPES), locs:[[ANYWHERE,ANYWHERE],...CITIES.map(c=>[c,c])],
+};
+const SINGLE = [['degree','Highest degree','e.g. BSc, diploma, bootcamp'],['field','Field of study','e.g. sociology'],
+  ['internships','Internships','a number'],['years','Years of work','a number'],['mode','Work mode','e.g. remote first']];
+const LISTS = [['skills','Skills','+ Add a skill','e.g. Snowflake'],['certs','Certifications and licences','+ Add a certification','e.g. Six Sigma Green Belt'],
+  ['interests','2 · Job interests','+ Add an interest','e.g. nursing, game design'],['locs','Locations you can work in','+ Add a location','e.g. Toronto, NYC']];
+
+function optionsHtml(key,val,withBlank){
+  const known=OPTS[key].some(([v])=>v===val);
+  return (withBlank?`<option value="" ${val===''?'selected':''}>Choose…</option>`:'')
+    + OPTS[key].map(([v,l])=>`<option value="${esc(v)}" ${v===val?'selected':''}>${esc(l)}</option>`).join('')
+    + `<option value="${OTHER}" ${val===OTHER||(!known&&val!=='')?'selected':''}>Other…</option>`;
 }
-function loadProfile(p){
-  $('#deg').value=p.degree; $('#field').value=p.field;
-  state.skills={...p.skills}; state.certs=new Set(p.certs);
-  $('#intern').value=p.internships; $('#years').value=p.years;
-  if(p.interests){ state.interests=new Set(p.interests); state.locs=new Set(p.locs); $('#mode').value=p.mode; }
-  syncChips();
+function otherInput(attrs,val,ph,show){
+  return `<input type="text" ${attrs} maxlength="60" placeholder="Type it: ${esc(ph)}" value="${esc(val||'')}" ${show?'':'hidden'} aria-label="Your own answer">`;
 }
+function renderRail(){
+  const P=state.prof; let h='';
+  h+='<div class="two">';
+  SINGLE.slice(0,2).forEach(([k,label,ph])=>{ h+=`<div class="pick"><label class="lbl" for="pk-${k}">${label}</label><select id="pk-${k}" data-pick="${k}">${optionsHtml(k,P[k].v,false)}</select>${otherInput(`data-pick-other="${k}"`,P[k].other,ph,P[k].v===OTHER)}</div>`; });
+  h+='</div><div class="two">';
+  SINGLE.slice(2,4).forEach(([k,label,ph])=>{ h+=`<div class="pick"><label class="lbl" for="pk-${k}">${label}</label><select id="pk-${k}" data-pick="${k}">${optionsHtml(k,P[k].v,false)}</select>${otherInput(`data-pick-other="${k}"`,P[k].other,ph,P[k].v===OTHER)}</div>`; });
+  h+='</div>';
+  LISTS.forEach(([k,label,add,ph],li)=>{
+    if(li===2) h+=`<hr class="sep">`;
+    h+=`<div class="plist"><span class="lbl">${label}</span>`;
+    if(k==='interests') h+=`<p class="hint" style="margin:0 0 6px">Roles in these categories are listed first. Leave empty to see all.</p>`;
+    P[k].forEach((row,i)=>{
+      h+=`<div class="prow ${k==='skills'?'with-level':''}"><select data-list="${k}" data-i="${i}" aria-label="${label} ${i+1}">${optionsHtml(k,row.v,true)}</select>`
+        + (k==='skills'?`<select data-level="${i}" aria-label="Skill level"><option value="1" ${row.level===1?'selected':''}>basic</option><option value="2" ${row.level===2?'selected':''}>advanced</option></select>`:'')
+        + `<button type="button" class="xbtn" data-del="${k}" data-i="${i}" aria-label="Remove">✕</button>`
+        + otherInput(`data-list-other="${k}" data-i="${i}"`,row.other,ph,row.v===OTHER)
+        + (row.v===OTHER&&row.other&&mapNote(k,row.other)?`<span class="mapnote">${esc(mapNote(k,row.other))}</span>`:'')
+        + `</div>`;
+    });
+    h+=`<button type="button" class="linkbtn addrow" data-add="${k}">${add}</button></div>`;
+  });
+  const [k,label,ph]=SINGLE[4];
+  h+=`<div class="pick"><label class="lbl" for="pk-${k}">${label}</label><select id="pk-${k}" data-pick="${k}">${optionsHtml(k,P[k].v,false)}</select>${otherInput(`data-pick-other="${k}"`,P[k].other,ph,P[k].v===OTHER)}</div>`;
+  $('#profileFields').innerHTML=h;
+}
+
+/* typed "Other" answers are matched to known options where possible */
+const CITY_ALIASES={'nyc':'New York','new york city':'New York','manhattan':'New York','brooklyn':'New York','sf':'San Francisco','bay area':'San Francisco',
+  'la':'Los Angeles','dc':'Washington DC','washington':'Washington DC','washington, dc':'Washington DC','philly':'Philadelphia','evanston':'Chicago','skokie':'Chicago'};
+function norm(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');}
+function canonSkill(t){ const n=norm(t); if(!n) return null; const exact=SKILLS.find(s=>s.toLowerCase()===n); if(exact) return exact;
+  const hit=SKILLS.find(s=>SKILL_ALIASES[s]&&SKILL_ALIASES[s].test(n)); return hit||t.trim(); }
+function canonCert(t){ const n=norm(t); const hit=CERTS.find(c=>c.toLowerCase()===n)||Object.keys(CERT_PATTERNS).find(c=>CERT_PATTERNS[c].test(n)); return hit||t.trim(); }
+function canonLoc(t){ const n=norm(t); if(!n) return null; if(/anywhere|remote|any(where)? in the us/.test(n)) return ANYWHERE;
+  return CITIES.find(c=>c.toLowerCase()===n)||CITY_ALIASES[n.replace(/[.,]/g,'').trim()]||CITY_ALIASES[n]||CITIES.find(c=>n.startsWith(c.toLowerCase()))||t.trim(); }
+function canonInterests(t){ const n=norm(t); return Object.keys(CAT_WORDS).filter(k=>CAT_WORDS[k].test(n)||norm(TYPES[k]).includes(n)&&n.length>3); }
+function degreeFromText(t){ const n=norm(t); if(/ph\.?d|doctor/.test(n)) return 4; if(/master|\bms\b|m\.s|msc|mba|\bma\b|m\.a/.test(n)) return 3;
+  if(/bachelor|\bba\b|\bbs\b|b\.a|b\.s|bsc|bsn|undergrad|4.year|college degree/.test(n)) return 2; if(/associate/.test(n)) return 1;
+  if(/high school|ged|no degree|none/.test(n)) return 0; return null; }
+function mapNote(k,t){
+  if(k==='skills'){ const c=canonSkill(t); return SKILLS.includes(c)?`Counted as ${c}`:'Kept as typed. No sample posting asks for it yet.'; }
+  if(k==='certs'){ const c=canonCert(t); return CERTS.includes(c)?`Counted as ${c}`:'Kept as typed. No sample posting asks for it yet.'; }
+  if(k==='locs'){ const c=canonLoc(t); return c===ANYWHERE||CITIES.includes(c)?`Counted as ${c}`:'No sample postings there yet. Remote roles still match.'; }
+  if(k==='interests'){ const c=canonInterests(t); return c.length?`Counted as ${c.map(x=>TYPES[x]).join(', ')}`:'No matching category yet. Showing all roles for this one.'; }
+  return '';
+}
+function intFrom(v,other,max){ const raw=v===OTHER?other:v; const n=parseInt(String(raw).replace(/[^\d]/g,''),10); return Number.isFinite(n)?Math.min(Math.max(n,0),max):0; }
+
 function readProfile(){
-  return {degree:+$('#deg').value, field:$('#field').value, skills:{...state.skills},
-    internships:Math.max(0,+$('#intern').value||0), years:Math.max(0,+$('#years').value||0), certs:[...state.certs],
-    interests:[...state.interests], locs:[...state.locs], mode:$('#mode').value};
+  const P=state.prof;
+  let degree=0, degreeOther='';
+  if(P.degree.v===OTHER){ const d=degreeFromText(P.degree.other); if(d===null){ degreeOther=P.degree.other.trim(); } else degree=d; }
+  else degree=+P.degree.v||0;
+  const field = P.field.v===OTHER ? (FIELDS.find(f=>f===norm(P.field.other))||norm(P.field.other)||'other') : P.field.v;
+  const skills={}; P.skills.forEach(r=>{ const name=r.v===OTHER?canonSkill(r.other):r.v; if(name) skills[name]=Math.max(skills[name]||0,r.level||1); });
+  const certs=[...new Set(P.certs.map(r=>r.v===OTHER?(r.other.trim()?canonCert(r.other):null):r.v).filter(Boolean))];
+  const interests=[...new Set(P.interests.flatMap(r=>r.v===OTHER?canonInterests(r.other):(r.v?[r.v]:[])))];
+  const freeInterest=P.interests.some(r=>r.v===OTHER&&r.other.trim()&&!canonInterests(r.other).length);
+  const locs=[...new Set(P.locs.map(r=>r.v===OTHER?canonLoc(r.other):r.v).filter(Boolean))];
+  let mode=P.mode.v;
+  if(mode===OTHER){ const n=norm(P.mode.other); mode=/remote/.test(n)?'remote':/hybrid/.test(n)?'hybrid':/on.?site|office|in.person/.test(n)?'onsite':/any|flexible|either/.test(n)?'any':''; }
+  return {degree, degreeOther, field, skills, internships:intFrom(P.internships.v,P.internships.other,20), years:intFrom(P.years.v,P.years.other,60),
+    certs, interests:freeInterest?[]:interests, locs, mode};
 }
+function profToState(p){
+  const sel=(key,val)=>OPTS[key].some(([v])=>v===String(val))?{v:String(val),other:''}:{v:OTHER,other:String(val)};
+  state.prof={degree:sel('degree',p.degree), field:sel('field',p.field),
+    skills:Object.entries(p.skills).map(([s,l])=>({...sel('skills',s),level:l})),
+    internships:sel('internships',Math.min(p.internships,5)===p.internships?p.internships:String(p.internships)),
+    years:sel('years',p.years>=10?10:p.years), certs:p.certs.map(c=>sel('certs',c)),
+    interests:p.interests.map(c=>sel('interests',c)), locs:p.locs.map(c=>sel('locs',c)), mode:sel('mode',p.mode)};
+}
+function loadProfile(p){ profToState(p); renderRail(); }
 function pickSample(key){
-  document.querySelectorAll('#samples button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.s===key));
-  $('#sampleNote').textContent = SAMPLES[key].note;
-  loadProfile(SAMPLES[key]); state.open=null; state.hidden.clear(); $('#extracted').hidden=true; render();
+  $('#sample').value=key;
+  const s=key==='__blank'?BLANK:SAMPLES[key];
+  $('#sampleNote').textContent = s.note;
+  loadProfile(s); state.open=null; state.hidden.clear(); $('#extracted').hidden=true; render();
 }
-$('#samples').addEventListener('click',e=>{const b=e.target.closest('button'); if(b) pickSample(b.dataset.s)});
+$('#sample').addEventListener('change',e=>pickSample(e.target.value));
 const rail=document.querySelector('.rail');
-rail.addEventListener('change',e=>{ if(e.target.id!=='cv') render(); });
-rail.addEventListener('click',e=>{
-  const b=e.target.closest('button'); if(!b) return;
-  if(b.dataset.skill){ const s=b.dataset.skill, l=((state.skills[s]||0)+1)%3; if(l) state.skills[s]=l; else delete state.skills[s]; }
-  else if(b.dataset.cert){ const c=b.dataset.cert; state.certs.has(c)?state.certs.delete(c):state.certs.add(c); }
-  else if(b.dataset.int){ const c=b.dataset.int; state.interests.has(c)?state.interests.delete(c):state.interests.add(c); }
-  else if(b.dataset.loc){ const c=b.dataset.loc; state.locs.has(c)?state.locs.delete(c):state.locs.add(c); }
-  else if(b.dataset.clear){ const k=b.dataset.clear; if(k==='skills') state.skills={}; else state[k].clear(); }
+rail.addEventListener('change',e=>{
+  const t=e.target, d=t.dataset, P=state.prof;
+  if(d.pick){ P[d.pick].v=t.value; if(t.value===OTHER){ renderRail(); const inp=rail.querySelector(`[data-pick-other="${d.pick}"]`); if(inp) inp.focus(); } else renderRail(); }
+  else if(d.list){ const row=P[d.list][+d.i]; row.v=t.value; renderRail(); if(t.value===OTHER){ const inp=rail.querySelector(`[data-list-other="${d.list}"][data-i="${d.i}"]`); if(inp) inp.focus(); } }
+  else if(d.level!=null){ P.skills[+d.level].level=+t.value; }
   else return;
-  syncChips(); state.open=null; render();
+  state.open=null; render();
+});
+rail.addEventListener('input',e=>{
+  const t=e.target, d=t.dataset, P=state.prof;
+  if(d.pickOther){ P[d.pickOther].other=t.value; }
+  else if(d.listOther){ P[d.listOther][+d.i].other=t.value; updateMapNote(t,d.listOther); }
+  else return;
+  state.open=null; render();
+});
+function updateMapNote(input,k){
+  let el=input.parentNode.querySelector('.mapnote'); const note=input.value.trim()?mapNote(k,input.value):'';
+  if(!note){ if(el) el.remove(); return; }
+  if(!el){ el=document.createElement('span'); el.className='mapnote'; input.after(el); }
+  el.textContent=note;
+}
+rail.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return; const d=b.dataset, P=state.prof;
+  if(d.add){ P[d.add].push(d.add==='skills'?{v:'',other:'',level:1}:{v:'',other:''}); renderRail();
+    const sels=rail.querySelectorAll(`[data-list="${d.add}"]`); if(sels.length) sels[sels.length-1].focus(); return; }
+  if(d.del){ P[d.del].splice(+d.i,1); renderRail(); state.open=null; render(); }
 });
 
 /* ---------- step 1 demo: keyword extraction (stands in for a Claude API call) ---------- */
@@ -380,27 +450,27 @@ const CERT_PATTERNS = {"CFA Level I":/\bcfa\b/,"CPA":/\bcpa\b/,"PMP / CAPM":/\b(
   "AWS Cloud Practitioner":/\baws\b/,"Google Analytics certification":/google analytics cert/};
 function reEsc(s){return s.replace(/[.*+?^${}()|[\]\\\/]/g,'\\$&');}
 $('#extract').addEventListener('click',()=>{
-  const t=$('#cv').value.toLowerCase(); const out=$('#extracted');
+  const t=$('#cv').value.slice(0,20000).toLowerCase(); const out=$('#extracted');
   if(!t.trim()){ out.hidden=false; out.textContent='Paste some CV text first.'; return; }
-  const found=[]; let deg=null;
+  const found=[]; const P=state.prof; let deg=null;
   if(/ph\.?d|doctorate/.test(t)) deg=4; else if(/master|m\.s\.|msc|mba|m\.a\./.test(t)) deg=3;
-  else if(/bachelor|b\.a\.|b\.s\.|\bba\b|\bbs\b|undergraduate/.test(t)) deg=2; else if(/associate/.test(t)) deg=1;
-  if(deg!==null){$('#deg').value=deg; found.push(DEG[deg]);}
-  const f=FIELDS.find(x=>x!=='other'&&t.includes(x)); if(f){$('#field').value=f; found.push(f);}
-  const sentences=t.split(/[.\n;]/); const sk={};
+  else if(/bachelor|b\.a\.|b\.s\.|\bba\b|\bbs\b|bsc|bsn|undergraduate/.test(t)) deg=2; else if(/associate degree/.test(t)) deg=1;
+  if(deg!==null){P.degree={v:String(deg),other:''}; found.push(DEG[deg]);}
+  const f=FIELDS.find(x=>x!=='other'&&t.includes(x)); if(f){P.field={v:f,other:''}; found.push(f);}
+  const sentences=t.split(/[.\n;]/); const sk=[];
   SKILLS.forEach(s=>{
-    const re=new RegExp('(^|[^a-z])'+reEsc(s.toLowerCase())+'([^a-z]|$)');
+    const re=SKILL_ALIASES[s]||new RegExp('(^|[^a-z])'+reEsc(s.toLowerCase())+'([^a-z]|$)');
     const hit=sentences.filter(x=>re.test(x));
-    if(hit.length){const adv=hit.some(x=>/advanced|proficient|expert|strong/.test(x)); sk[s]=adv?2:1; found.push(s+(adv?' (advanced)':''));}
+    if(hit.length){const adv=hit.some(x=>/advanced|proficient|expert|strong/.test(x)); sk.push({v:s,other:'',level:adv?2:1}); found.push(s+(adv?' (advanced)':''));}
   });
-  state.skills=sk;
-  const words={one:1,two:2,three:3,four:4};
-  const im=t.match(/(\d+|one|two|three|four)\s+internships?/);
+  if(sk.length) P.skills=sk;
+  const words={one:1,two:2,three:3,four:4,five:5};
+  const im=t.match(/(\d+|one|two|three|four|five)\s+internships?/);
   const ic=im?(words[im[1]]||+im[1]):(t.match(/\bintern(ship)?\b/g)||[]).length;
-  $('#intern').value=Math.min(ic,6); if(ic) found.push(ic+' internship'+(ic>1?'s':''));
-  const ym=t.match(/(\d+)\+?\s+years?/); $('#years').value=ym?+ym[1]:0; if(ym) found.push(ym[1]+' years of work');
-  state.certs=new Set(Object.keys(CERT_PATTERNS).filter(c=>CERT_PATTERNS[c].test(t))); state.certs.forEach(c=>found.push(c));
-  syncChips(); out.hidden=false;
+  if(ic){ P.internships=ic<=5?{v:String(ic),other:''}:{v:OTHER,other:String(ic)}; found.push(ic+' internship'+(ic>1?'s':'')); }
+  const ym=t.match(/(\d{1,2})\+?\s+years?/); if(ym){ const y=Math.min(+ym[1],60); P.years=y<=10?{v:String(y),other:''}:{v:OTHER,other:String(y)}; found.push(y+' years of work'); }
+  const cs=Object.keys(CERT_PATTERNS).filter(c=>CERT_PATTERNS[c].test(t)); if(cs.length){ P.certs=cs.map(c=>({v:c,other:''})); cs.forEach(c=>found.push(c)); }
+  renderRail(); out.hidden=false;
   out.textContent = found.length? 'Found: '+found.join(', ')+'. Check the fields below and correct anything wrong.' : 'Nothing recognised. Fill in the fields below by hand.';
   state.open=null; render();
 });
@@ -414,6 +484,7 @@ const skName = r => r.skill || r.any.join('/');
 function evalReq(r,p){
   if(r.s==='unclear'||r.k==='other') return {state:'unclear',note:'Rules cannot check this wording. Confirm with the employer.'};
   if(r.k==='degree'){
+    if(p.degreeOther&&!(r.alt&&p.years>=r.alt.years)) return {state:'unclear',note:`Rules cannot rank "${p.degreeOther}" against this. Confirm with the employer.`};
     const lvOk=p.degree>=r.level, fOk=!r.fields||r.fields.includes(p.field);
     if(lvOk&&fOk) return {state:'met',note:p.degree?`You have a ${DEG[p.degree]} in ${p.field}`:''};
     if(r.alt&&p.years>=r.alt.years) return {state:'met',note:`Met through ${p.years} years of experience (equivalent route)`};
@@ -437,7 +508,7 @@ function analyse(job,p){
   const rs=job.reqs.map(r=>({r,...evalReq(r,p)}));
   const age=days(job.posted);
   const missing=rs.filter(x=>x.r.s==='required'&&x.state==='missing');
-  const unclear=rs.filter(x=>x.r.s==='unclear');
+  const unclear=rs.filter(x=>x.r.s==='unclear'||(x.r.s==='required'&&x.state==='unclear'));
   const confirm=[], conflicts=[];
   if(!p.locs.length) confirm.push('location');
   else if(!p.locs.includes(ANYWHERE)&&job.mode!=='remote'&&!p.locs.includes(job.loc)) conflicts.push(`Located in ${job.loc}; you chose ${p.locs.join(', ')}`);
@@ -746,17 +817,29 @@ const CAT_WORDS={data:/\bdata\b|analytics|insight|\bbi\b/,business:/business ana
 function skillHits(line){
   return SKILLS.filter(s=>{ const re=SKILL_ALIASES[s]||new RegExp('(^|[^a-z])'+reEsc(s.toLowerCase())+'([^a-z]|$)'); return re.test(line); });
 }
+function splitClauses(line){
+  const bullet=/^[-•*·]\s*/.test(line)?'- ':'';
+  let parts=line.replace(/^[-•*·]\s*/,'').split(/(?<=[.;])\s+(?=[A-Za-z])/).map(x=>x.trim()).filter(Boolean);
+  parts=parts.flatMap(c=>{ const m=c.match(/^(.*\S),\s*([^,]*\b(?:preferred|a plus|nice to have|desired)\b.*)$/i);
+    return m&&/must|requir|need|have/i.test(m[1])?[m[1],m[2]]:[c]; });
+  return parts.length>1?parts.map(x=>'- '+x):[bullet+parts.join('')];
+}
 function parsePosting(text){
-  const raw=text.split('\n').map(x=>x.trim()).filter(Boolean);
+  const lines0=text.slice(0,20000).split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  const head2=lines0.slice(0,2);
+  const raw=head2.concat(lines0.slice(2).flatMap(splitClauses)).map(x=>x.slice(0,400)).slice(0,200);
+  if(lines0.length<=2){ raw.splice(0,raw.length,...lines0.slice(0,1),...lines0.slice(1).flatMap(splitClauses)); if(lines0.length===1) raw.push(...splitClauses(lines0[0])); }
   const isHeader=l=>l.length<45&&!/^[-•*·]/.test(l)&&/requir|qualif|must have|what you need|you have|you bring|minimum|basic|prefer|nice to have|bonus|desired|plus/i.test(l);
   const firstHeader=raw.findIndex(isHeader);
   let section='required'; const reqs=[];
   raw.forEach((l,i)=>{
+    if(i===0&&lines0.length===1) return; // a one-line paste: its clauses are read below, not the whole line again
     const low=l.toLowerCase();
     if(isHeader(l)){ section=/prefer|nice to have|bonus|desired|plus/.test(low)?'preferred':'required'; return; }
     if(firstHeader>=0&&i<firstHeader) return;
     const s=/preferred|a plus|nice to have|desired/.test(low)?'preferred':section;
     const before=reqs.length;
+    if(/no (college |university )?degree (is )?(required|needed|necessary)|degree (is )?not (required|needed|necessary)/.test(low)){ reqs.push({s:'info',k:'note',t:l.replace(/^[-•*·]\s*/,'')}); return; }
     const strong=/advanced|proficien|expert|strong|deep/.test(low);
     // degree
     let lvl=null;
@@ -777,7 +860,9 @@ function parsePosting(text){
     Object.entries(CERT_PATTERNS).forEach(([c,re])=>{ if(re.test(low)) reqs.push({s,k:'cert',cert:c,t:l.replace(/^[-•*·]\s*/,'')}); });
     // experience
     if(!lvl){
-      const ym=low.match(/(\d+)\+?\s*(?:years?|yrs?)/); if(ym) reqs.push({s,k:'exp',years:+ym[1],t:l.replace(/^[-•*·]\s*/,'')});
+      const rg=low.match(/(\d+)\s*(?:-|–|to)\s*(\d+)\+?\s*(?:years?|yrs?)/), ym=rg||low.match(/(\d+)\+?\s*(?:years?|yrs?)/);
+      if(ym){ const y=+ym[1]; if(y>30) reqs.push({s:s==='preferred'?'preferred':'unclear',k:'other',t:`"${l.replace(/^[-•*·]\s*/,'')}" (${y} years looks wrong)`});
+        else reqs.push({s,k:'exp',years:y,t:l.replace(/^[-•*·]\s*/,'')}); }
     }
     if(/internship|clinical rotation|co-op/.test(low)){
       const m=low.match(/(\d+|one|two|three)\s+(?:\w+\s+)?(?:internship|clinical rotation|co-op)/); const n=m?(WORDNUM[m[1]]||+m[1]):1;
@@ -788,15 +873,19 @@ function parsePosting(text){
       else if(/^[-•*·]/.test(l)) reqs.push({s:s==='preferred'?'preferred':'unclear',k:'other',t:`"${l.replace(/^[-•*·]\s*/,'')}"`,unread:true});
     }
   });
-  const title=raw[0]||'Your job posting';
+  const title=(raw[0]||'Your job posting').slice(0,90);
   const meta=(raw[1]||'');
-  const org=meta.split(/·|\||—| - /)[0].trim()||'Employer not stated';
+  const org=(meta.split(/·|\||—| - /)[0].trim()||'Employer not stated').slice(0,60);
   const lowAll=text.toLowerCase();
   const loc=CITIES.find(c=>lowAll.includes(c.toLowerCase()))||'Location not stated';
   const mode=/remote/.test(lowAll)?'remote':/hybrid/.test(lowAll)?'hybrid':/on-?site|in office|in-person/.test(lowAll)?'onsite':null;
   let type='business', best=-1;
   Object.entries(CAT_WORDS).forEach(([k,re])=>{ const sc=(re.test(title.toLowerCase())?3:0)+((lowAll.match(new RegExp(re.source,'g'))||[]).length>0?1:0); if(sc>best){best=sc;type=k;} });
-  return {id:'YOURS',title,org,type,loc:loc,mode,posted:SNAPSHOT,reqs,custom:true};
+  const notes=reqs.filter(r=>r.s==='info').map(r=>r.t);
+  let out=reqs.filter(r=>r.s!=='info'), contradiction=false;
+  if(notes.length&&out.some(r=>r.k==='degree'&&r.s==='required')){ contradiction=true;
+    out=out.map(r=>r.k==='degree'&&r.s==='required'?{s:'unclear',k:'other',t:`"${r.t}" (the posting also says no degree is required)`}:r); }
+  return {id:'YOURS',title,org,type,loc:loc,mode,posted:SNAPSHOT,reqs:out,notes,contradiction,custom:true};
 }
 function runCheck(){
   const text=$('#posting').value.trim();
@@ -805,14 +894,33 @@ function runCheck(){
 }
 function renderCheck(){
   const p=readProfile(), job=state.checked;
-  if(!job.reqs.length){ $('#checkOut').innerHTML='<div class="empty">No requirements found. Paste the part of the posting that lists qualifications.</div>'; return; }
+  const checkable=job.reqs.filter(r=>['degree','skill','exp','cert'].includes(r.k));
+  if(!checkable.length){
+    const shown=job.reqs.slice(0,8);
+    $('#checkOut').innerHTML=`<section class="verdict"><div class="verdict-head"><h2>Can't assess this posting</h2></div>
+      <p style="margin:0">The rules found no degree, skill, experience or licence requirement they can check${job.reqs.length?`. They found ${job.reqs.length} line${job.reqs.length>1?'s':''} they could not read`:''}. No eligibility label is given, so nothing is marked ready.</p>
+      ${shown.length?`<ul style="margin:0;padding-left:18px">${shown.map(r=>`<li>${esc(r.t)}</li>`).join('')}</ul>`:''}
+      <p class="hint" style="margin:0">Paste the requirements or qualifications section in English. In the full build Claude reads free-form postings.</p></section>`;
+    return;
+  }
   const a=analyse(job,p);
   const n=s=>job.reqs.filter(r=>r.s===s).length, unread=job.reqs.filter(r=>r.unread).length;
-  const label={ready:'Ready to apply',confirm:'Ready, needs confirmation',advanced:'Work toward: gaps remain',excluded:'Outside your location or work-mode settings'}[a.status];
+  const unreadReq=job.reqs.filter(r=>r.unread&&r.s!=='preferred').length;
+  const reqCheckable=checkable.filter(r=>r.s==='required').length;
+  let label={ready:'Ready to apply',confirm:'Ready, needs confirmation',advanced:'Work toward: gaps remain',excluded:'Outside your location or work-mode settings'}[a.status];
+  let caution='';
+  if(a.status==='ready'||a.status==='confirm'){
+    if(!reqCheckable){ label="Can't confirm: no required items found"; caution='Every requirement the rules read is marked preferred. Check the posting for its must-haves before applying.'; }
+    else if(unreadReq){ label=`Can't confirm: ${unreadReq} required line${unreadReq>1?'s':''} unreadable`; caution='The items the rules could read are met, but some required lines could not be read. Check them yourself before applying.'; }
+    if(caution) a.status='confirm';
+  }
   const sim=JOBS.filter(j=>j.type===job.type).map(j=>analyse(j,p)).filter(x=>x.status!=='excluded')
     .sort((x,y)=>RANK[x.status]-RANK[y.status]||y.fit-x.fit).slice(0,4);
   $('#checkOut').innerHTML=`<section class="verdict">
       <div class="verdict-head"><h2>${esc(label)}</h2><span class="cat">Read ${job.reqs.length} requirements: ${n('required')} required, ${n('preferred')} preferred, ${n('unclear')} unclear${unread?` (${unread} the rules could not read)`:''}. Category guess: ${esc(TYPES[job.type])}.</span></div>
+      ${caution?`<div class="notice">${caution}</div>`:''}
+      ${!caution&&job.reqs.filter(r=>r.unread).length>checkable.length?`<div class="notice">The rules could not read most lines in this posting. Treat this result as incomplete.</div>`:''}
+      ${job.contradiction?`<div class="notice">The posting contradicts itself on degrees, so the degree line is marked unclear. Confirm with the employer.</div>`:(job.notes||[]).length?`<div class="callout">The posting says no degree is required.</div>`:''}
       ${a.conflict?`<div class="notice">This role does not match your location or work-mode settings: ${esc(a.conflict)}.</div>`:''}
       <div class="list">${card(a,p)}</div>
     </section>
