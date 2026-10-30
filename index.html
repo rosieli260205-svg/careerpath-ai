@@ -1,0 +1,877 @@
+<title>CareerPath AI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: a profile rail on the left drives a ranked results column (Ready / Work toward) on the right */
+:root{
+  --bg:#f6f5f9; --surface:#ffffff; --ink:#1c1824; --muted:#665f73; --line:#e2dde9;
+  --accent:#4e2a84; --accent-ink:#ffffff; --accent-soft:#efe9f7;
+  --ok:#1d7347; --ok-soft:#e4f2ea; --warn:#93560a; --warn-soft:#fbefda; --bad:#a8321f; --bad-soft:#f9e5e1; --neutral-soft:#efedf2;
+  --f-display:"Bricolage Grotesque","Instrument Sans",system-ui,sans-serif;
+  --f-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141119; --surface:#1d1925; --ink:#ece8f2; --muted:#a69eb4; --line:#332d3e;
+  --accent:#bca2ea; --accent-ink:#1a1022; --accent-soft:#2b2339;
+  --ok:#72cf9e; --ok-soft:#163026; --warn:#efb45f; --warn-soft:#342712; --bad:#f08b79; --bad-soft:#3a1d18; --neutral-soft:#27212f;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141119; --surface:#1d1925; --ink:#ece8f2; --muted:#a69eb4; --line:#332d3e;
+  --accent:#bca2ea; --accent-ink:#1a1022; --accent-soft:#2b2339;
+  --ok:#72cf9e; --ok-soft:#163026; --warn:#efb45f; --warn-soft:#342712; --bad:#f08b79; --bad-soft:#3a1d18; --neutral-soft:#27212f;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1200px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+.brand h1{font-size:30px;letter-spacing:-.01em;color:var(--accent)}
+.brand p{margin:2px 0 0;color:var(--muted)}
+.proto{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:var(--surface)}
+.flow{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:22px;list-style:none;padding-left:0;counter-reset:s}
+.flow li{flex:1 0 auto;display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;white-space:nowrap}
+.flow li b{font-family:var(--f-mono);font-weight:500;color:var(--accent)}
+
+.grid{display:grid;gap:24px;grid-template-columns:1fr}
+@media (min-width:920px){.grid{grid-template-columns:340px minmax(0,1fr)}}
+
+/* profile rail */
+.rail{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:16px;align-self:start}
+@media (min-width:920px){.rail{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}}
+.rail h2{font-size:18px}
+.lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;margin-bottom:6px;display:block}
+.seg{display:flex;gap:4px;background:var(--neutral-soft);border-radius:8px;padding:3px}
+.seg button{flex:1;border:0;background:transparent;border-radius:6px;padding:6px 8px;cursor:pointer;font-size:13.5px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.hint{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+select,input[type=number],textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+textarea{min-height:84px;resize:vertical;font-size:13.5px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.skills{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.skill{display:flex;align-items:center;gap:8px}
+.skill span{flex:0 0 56px;font-size:13.5px}
+.skill select{padding:5px 6px;font-size:13px}
+.checks{display:flex;flex-wrap:wrap;gap:6px}
+.chk{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 10px 4px 8px;font-size:13.5px;cursor:pointer;background:var(--bg)}
+.chk:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.chk input{accent-color:var(--accent);margin:0}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600;font-size:13.5px}
+.btn.ghost{background:transparent;color:var(--accent)}
+.extracted{font-size:12.5px;color:var(--ok);margin:6px 0 0}
+hr.sep{border:0;border-top:1px solid var(--line);margin:0}
+
+/* results */
+.summary{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:5px 11px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
+.pill i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.group{margin-bottom:28px}
+.ghead{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-bottom:10px}
+.ghead h2{font-size:21px}
+.ghead p{margin:0;color:var(--muted);font-size:13.5px}
+.list{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.card.open{border-color:var(--accent)}
+.card-head{width:100%;display:flex;gap:16px;align-items:center;text-align:left;background:transparent;border:0;padding:14px 16px;cursor:pointer}
+.ch-main{flex:1;min-width:0}
+.ch-top{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin-bottom:4px}
+.jid{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.card h3{font-size:17px;font-weight:600}
+.org{margin:2px 0 0;color:var(--muted);font-size:13.5px}
+.badge{font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px}
+.b-ready{background:var(--ok-soft);color:var(--ok)}
+.b-confirm{background:var(--warn-soft);color:var(--warn)}
+.b-advanced{background:var(--accent-soft);color:var(--accent)}
+.b-withheld{background:var(--neutral-soft);color:var(--muted)}
+.gaps{font-size:12px;color:var(--muted)}
+.fit{flex:0 0 64px;text-align:right}
+.fitnum{font-family:var(--f-mono);font-size:20px;font-weight:500}
+.fitlbl{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.fitbar{height:4px;background:var(--neutral-soft);border-radius:2px;margin-top:4px;overflow:hidden}
+.fitbar i{display:block;height:100%;background:var(--accent)}
+.card-body{border-top:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:16px}
+.cols{display:grid;gap:20px;grid-template-columns:1fr}
+@media (min-width:1100px){.cols{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}}
+.cols > section{min-width:0}
+h4{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 8px}
+.tablewrap{overflow-x:auto}
+table.reqs{width:100%;border-collapse:collapse;font-size:13.5px}
+.reqs td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.reqs tr:last-child td{border-bottom:0}
+.tag{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:2px 6px;border-radius:4px;white-space:nowrap}
+.t-required{background:var(--ink);color:var(--surface)}
+.t-preferred{background:var(--neutral-soft);color:var(--muted)}
+.t-unclear{background:var(--warn-soft);color:var(--warn)}
+.res{font-weight:600;white-space:nowrap}
+.r-met{color:var(--ok)} .r-missing{color:var(--bad)} .r-unclear{color:var(--warn)}
+.rnote{font-size:12.5px;color:var(--muted);margin-top:2px}
+.why{margin:0 0 8px}
+.ai-note{font-size:12px;color:var(--muted);border-left:2px solid var(--line);padding-left:8px;margin:0 0 16px}
+ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+ol.steps li strong{display:block;font-weight:600}
+ol.steps li span{color:var(--muted);font-size:13.5px}
+.card-foot{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--muted)}
+.linkbtn{border:1px solid var(--line);background:transparent;border-radius:8px;padding:5px 10px;cursor:pointer;font-size:13px}
+.linkbtn:hover{border-color:var(--accent);color:var(--accent)}
+.notice{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:13.5px}
+.empty{color:var(--muted);font-size:14px;background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:16px}
+details.excluded{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+details.excluded summary{cursor:pointer;font-weight:600}
+details.excluded ul{margin:10px 0 0;padding-left:18px;font-size:13.5px;color:var(--muted)}
+.hiddenbar{font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.rule{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;margin-top:8px}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .15s}}
+/* chip pickers */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips.scroll{max-height:168px;overflow-y:auto;padding:2px}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 10px;font-size:13px;cursor:pointer;color:var(--ink);line-height:1.35}
+.chip[aria-pressed="true"],.chip[data-level="1"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.chip[data-level="2"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.chip small{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;margin-left:4px;opacity:.85}
+.legend{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--muted);margin:4px 0 8px}
+.legend .chip{pointer-events:none;padding:1px 8px;font-size:11.5px}
+.lblrow{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.lblrow .clear{border:0;background:none;color:var(--accent);font-size:12px;cursor:pointer;padding:0}
+details.others{margin-top:4px}
+details.others > summary{cursor:pointer;font-family:var(--f-display);font-size:21px;font-weight:600;list-style:none;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+details.others > summary::-webkit-details-marker{display:none}
+details.others > summary::before{content:"▸";color:var(--accent);font-size:16px}
+details.others[open] > summary::before{content:"▾"}
+details.others > summary span{font-family:var(--f-body);font-size:13.5px;font-weight:400;color:var(--muted)}
+details.others .list{margin-top:12px}
+.cat{font-size:12px;color:var(--muted)}
+
+/* tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 22px;overflow-x:auto}
+.tabs a{display:inline-flex;gap:8px;align-items:center;padding:10px 14px;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);text-decoration:none;font-weight:600;white-space:nowrap}
+.tabs a[aria-current="page"]{color:var(--accent);border-bottom-color:var(--accent)}
+.tabs a:hover{color:var(--ink)}
+.tabs .count{font-family:var(--f-mono);font-size:11.5px;font-weight:500;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:1px 7px}
+.tagline{margin:6px 0 0;font-size:13.5px;color:var(--ink);font-style:italic}
+
+/* next moves */
+.moves{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:28px}
+.moves h2{font-size:21px}
+.moves > p{margin:4px 0 14px;color:var(--muted);font-size:13.5px}
+.move{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.move:first-of-type{border-top:0}
+.move b{font-weight:600}
+.move .eff{font-size:12px;color:var(--muted)}
+.move .eff.big{color:var(--warn);font-weight:600}
+.move .gain{text-align:right;font-family:var(--f-mono);font-size:13px;white-space:nowrap}
+.move .gain strong{font-size:20px;font-weight:500;color:var(--ok)}
+.move .gain.zero strong{color:var(--muted)}
+.move .sub{grid-column:1/-1;font-size:12.5px;color:var(--muted)}
+.move .addplan{justify-self:start;margin-top:4px}
+.callout{background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-size:13.5px;margin-top:12px}
+
+/* check a job */
+.checkbox{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
+.checkbox textarea{min-height:200px;font-size:13.5px;font-family:var(--f-body)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.verdict{background:var(--surface);border:1px solid var(--accent);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:14px;margin-bottom:28px}
+.verdict-head{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.verdict-head h2{font-size:21px}
+
+/* save + plan */
+.foot-actions{display:flex;gap:8px;flex-wrap:wrap}
+.linkbtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.plan-sec{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:20px}
+.plan-sec h2{font-size:21px;margin-bottom:10px}
+.plan-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.plan-item:first-of-type{border-top:0}
+.plan-item > div{min-width:0}
+.plan-item .org{margin:0}
+pre.plantext{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;font-family:var(--f-mono);font-size:12.5px;max-height:320px;overflow:auto;margin:0}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13.5px;z-index:20}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>CareerPath AI</h1>
+      <p>Which jobs fit me now, and which can I work toward?</p>
+      <p class="tagline">Know what your degree already qualifies you for, before borrowing for another one.</p>
+    </div>
+    <span class="proto" id="protoNote">Prototype</span>
+  </header>
+
+  <ol class="flow" aria-label="Workflow">
+    <li><b>1</b>Confirm profile</li><li><b>2</b>Set preferences</li><li><b>3</b>Find jobs</li>
+    <li><b>4</b>Check eligibility</li><li><b>5</b>List jobs</li><li><b>6</b>Plan next actions</li><li><b>7</b>Update matches</li>
+  </ol>
+
+  <nav class="tabs" aria-label="Views">
+    <a href="#find" data-view="find">Find jobs for me</a>
+    <a href="#check" data-view="check">Check a job I found</a>
+    <a href="#plan" data-view="plan">My plan <span class="count" id="planCount">0</span></a>
+  </nav>
+
+  <div class="grid">
+    <aside class="rail" aria-label="Your profile">
+      <div>
+        <span class="lbl">Example profile</span>
+        <div class="seg" id="samples" role="group"></div>
+        <p class="hint" id="sampleNote"></p>
+      </div>
+
+      <div>
+        <label class="lbl" for="cv">1 · Paste a CV (optional)</label>
+        <textarea id="cv" placeholder="e.g. BA in Economics, Northwestern. Intern at a retail firm, built Excel reports and wrote SQL queries..."></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn" type="button" id="extract">Extract profile</button>
+          <span class="hint" style="margin:0">Demo uses keyword matching in place of Claude.</span>
+        </div>
+        <p class="extracted" id="extracted" hidden></p>
+      </div>
+      <hr class="sep">
+
+      <div class="two">
+        <div><label class="lbl" for="deg">Highest degree</label>
+          <select id="deg"><option value="0">No degree</option><option value="1">Associate</option><option value="2">Bachelor's</option><option value="3">Master's</option><option value="4">PhD</option></select></div>
+        <div><label class="lbl" for="field">Field</label>
+          <select id="field"></select></div>
+      </div>
+
+      <div>
+        <div class="lblrow"><span class="lbl">Skills</span><button type="button" class="clear" data-clear="skills">Clear</button></div>
+        <div class="legend">Tap to cycle: <span class="chip">none</span><span class="chip" data-level="1">basic</span><span class="chip" data-level="2">advanced</span></div>
+        <div class="chips scroll" id="skills"></div>
+      </div>
+
+      <div class="two">
+        <div><label class="lbl" for="intern">Internships</label><input id="intern" type="number" min="0" max="10"></div>
+        <div><label class="lbl" for="years">Years of work</label><input id="years" type="number" min="0" max="40"></div>
+      </div>
+
+      <div>
+        <span class="lbl">Certifications and licences</span>
+        <div class="chips" id="certs"></div>
+      </div>
+      <hr class="sep">
+
+      <div>
+        <div class="lblrow"><span class="lbl">2 · Job interests</span><button type="button" class="clear" data-clear="interests">Clear</button></div>
+        <p class="hint" style="margin:0 0 8px">Roles in these categories are listed first. Pick none to see all.</p>
+        <div class="chips" id="interests"></div>
+      </div>
+      <div>
+        <div class="lblrow"><span class="lbl">Locations you can work in</span><button type="button" class="clear" data-clear="locs">Clear</button></div>
+        <div class="chips scroll" id="locs"></div>
+      </div>
+      <div>
+        <label class="lbl" for="mode">Work mode</label>
+        <select id="mode"><option value="">Not set</option><option value="any">Any</option><option value="onsite">On-site</option><option value="hybrid">Hybrid</option><option value="remote">Remote</option></select>
+      </div>
+      <p class="hint">Location and work mode are must-have constraints. Leave them unset and matching roles will ask you to confirm. Remote roles match any location.</p>
+    </aside>
+
+    <main id="main">
+      <div id="view-find"><div id="results" aria-live="polite"></div></div>
+
+      <div id="view-check" hidden>
+        <div class="checkbox">
+          <label class="lbl" for="posting">Paste a job posting you found</label>
+          <p class="hint" style="margin:0">Already have a target job? Start here at step 4. The check uses the profile on the left.</p>
+          <div class="row"><span class="hint" style="margin:0">Try an example:</span>
+            <button type="button" class="linkbtn" data-sample-post="0">Data analyst, Chicago</button>
+            <button type="button" class="linkbtn" data-sample-post="1">Marketing associate, remote</button>
+            <button type="button" class="linkbtn" data-sample-post="2">Nurse, Boston</button>
+          </div>
+          <textarea id="posting" placeholder="Paste the job title, location and the requirements section here..."></textarea>
+          <div class="row"><button class="btn" type="button" id="runCheck">Check my eligibility</button>
+            <span class="hint" style="margin:0">Demo reads requirements with keyword rules. The full build uses Claude to read them.</span></div>
+        </div>
+        <div id="checkOut" aria-live="polite"></div>
+      </div>
+
+      <div id="view-plan" hidden></div>
+    </main>
+  </div>
+</div>
+
+<script>
+const JOBS = [{"id": "S1", "title": "Junior Data Analyst", "org": "Lakeshore Retail Analytics", "type": "data", "loc": "Chicago", "mode": null, "posted": "2026-10-22", "reqs": [{"s": "required", "k": "degree", "level": 2, "t": "Bachelor's degree (any field)"}, {"s": "required", "k": "skill", "skill": "SQL", "level": 1, "t": "SQL basics"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel basics"}, {"s": "preferred", "k": "degree", "level": 3, "t": "Master's degree"}]}, {"id": "S2", "title": "Data Analyst", "org": "Northshore Health Network", "type": "data", "loc": "Chicago", "mode": "hybrid", "posted": "2026-10-12", "reqs": [{"s": "required", "k": "degree", "level": 2, "t": "Bachelor's degree"}, {"s": "required", "k": "skill", "skill": "SQL", "level": 2, "t": "Advanced SQL (window functions, CTEs)"}, {"s": "required", "k": "skill", "skill": "Python", "level": 1, "t": "Python"}, {"s": "required", "k": "exp", "years": 1, "t": "1+ year analyst experience"}, {"s": "preferred", "k": "skill", "skill": "Tableau", "level": 1, "t": "Tableau"}]}, {"id": "S3", "title": "Economic Research Analyst", "org": "Prairie Policy Institute", "type": "data", "loc": "Washington DC", "mode": "hybrid", "posted": "2026-10-20", "reqs": [{"s": "required", "k": "degree", "level": 3, "fields": ["economics", "statistics"], "t": "Master's degree in economics or statistics"}, {"s": "required", "k": "skill", "any": ["Stata", "R", "Python"], "level": 1, "t": "Stata or R or Python"}, {"s": "preferred", "k": "other", "t": "Published research"}]}, {"id": "S4", "title": "Business Intelligence Analyst", "org": "Loop Media Group", "type": "data", "loc": "New York", "mode": "remote", "posted": "2026-10-24", "reqs": [{"s": "required", "k": "degree", "level": 2, "alt": {"years": 4}, "t": "Bachelor's degree, or 4 years of equivalent experience"}, {"s": "required", "k": "skill", "skill": "SQL", "level": 1, "t": "SQL"}, {"s": "required", "k": "skill", "any": ["Tableau", "Power BI"], "level": 1, "t": "Tableau or Power BI"}]}, {"id": "S5", "title": "Marketing Data Analyst", "org": "Fulton Market Brands", "type": "data", "loc": "Chicago", "mode": "hybrid", "posted": "2026-08-14", "reqs": [{"s": "required", "k": "degree", "level": 2, "t": "Bachelor's degree"}, {"s": "required", "k": "skill", "skill": "SQL", "level": 1, "t": "SQL"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}, {"s": "preferred", "k": "skill", "skill": "Python", "level": 1, "t": "Python"}]}, {"id": "S6", "title": "Analytics Associate", "org": "Cascade Outdoor Co.", "type": "data", "loc": "Seattle", "mode": "hybrid", "posted": "2026-10-21", "reqs": [{"s": "required", "k": "degree", "level": 2, "t": "Bachelor's degree"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}, {"s": "required", "k": "skill", "any": ["SQL", "Python", "R"], "level": 1, "t": "SQL or Python or R"}, {"s": "preferred", "k": "skill", "skill": "Google Analytics", "level": 1, "t": "Google Analytics"}]}, {"id": "S7", "title": "Business Analyst I", "org": "Midway Freight Co.", "type": "business", "loc": "Chicago", "mode": "hybrid", "posted": "2026-10-15", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["business", "economics", "finance"], "t": "Bachelor's degree in business, economics or finance"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}, {"s": "required", "k": "exp", "internships": 1, "t": "At least one internship"}, {"s": "preferred", "k": "skill", "skill": "Tableau", "level": 1, "t": "Tableau dashboards"}]}, {"id": "S8", "title": "Junior Business Analyst", "org": "Wicker Park Software", "type": "business", "loc": "Chicago", "mode": "hybrid", "posted": "2026-10-26", "reqs": [{"s": "required", "k": "degree", "level": 2, "t": "Bachelor's degree"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}, {"s": "unclear", "k": "other", "t": "\"Comfortable with ambiguity and stakeholders\""}, {"s": "preferred", "k": "skill", "skill": "SQL", "level": 1, "t": "SQL"}]}, {"id": "S9", "title": "Consulting Analyst", "org": "Hudson Square Advisory", "type": "business", "loc": "New York", "mode": "hybrid", "posted": "2026-10-18", "reqs": [{"s": "required", "k": "degree", "level": 2, "t": "Bachelor's degree"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 2, "t": "Advanced Excel"}, {"s": "required", "k": "skill", "skill": "Public speaking", "level": 1, "t": "Public speaking"}, {"s": "required", "k": "exp", "internships": 1, "t": "1 internship"}, {"s": "unclear", "k": "other", "t": "\"Strong structured problem solving\""}]}, {"id": "S10", "title": "Entry-Level Financial Analyst", "org": "Riverbend Credit Union", "type": "finance", "loc": "Chicago", "mode": "onsite", "posted": "2026-10-19", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["finance", "accounting", "economics"], "t": "Bachelor's degree in finance, accounting or economics"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}, {"s": "unclear", "k": "other", "t": "\"Strong financial modelling skills\""}, {"s": "preferred", "k": "cert", "cert": "CFA Level I", "t": "CFA Level I"}]}, {"id": "S11", "title": "Financial Analyst", "org": "Evanston Capital Partners", "type": "finance", "loc": "Chicago", "mode": "onsite", "posted": "2026-10-08", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["finance", "accounting"], "t": "Bachelor's degree in finance or accounting"}, {"s": "required", "k": "skill", "skill": "Financial modeling", "level": 2, "t": "Advanced financial modeling"}, {"s": "required", "k": "exp", "internships": 2, "t": "Two finance internships"}, {"s": "preferred", "k": "cert", "cert": "CFA Level I", "t": "CFA Level I"}]}, {"id": "S12", "title": "Credit Risk Analyst", "org": "Lakeview Bank", "type": "finance", "loc": "Charlotte", "mode": "hybrid", "posted": "2026-10-17", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["economics", "finance", "mathematics", "statistics"], "t": "Bachelor's degree in economics, finance, mathematics or statistics"}, {"s": "required", "k": "skill", "skill": "SQL", "level": 1, "t": "SQL"}, {"s": "required", "k": "skill", "skill": "Python", "level": 1, "t": "Python"}, {"s": "preferred", "k": "degree", "level": 3, "t": "Master's degree"}]}, {"id": "S13", "title": "Staff Accountant", "org": "Trinity Building Supply", "type": "finance", "loc": "Dallas", "mode": "onsite", "posted": "2026-10-23", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["accounting"], "t": "Bachelor's degree in accounting"}, {"s": "required", "k": "skill", "skill": "Accounting (GAAP)", "level": 1, "t": "Accounting (GAAP)"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}, {"s": "preferred", "k": "cert", "cert": "CPA", "t": "CPA"}]}, {"id": "S14", "title": "Junior Software Engineer", "org": "Puget Logistics Tech", "type": "software", "loc": "Seattle", "mode": "hybrid", "posted": "2026-10-25", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["computer science", "engineering", "mathematics"], "alt": {"years": 3}, "t": "Bachelor's degree in computer science, engineering or mathematics, or 3 years of equivalent experience"}, {"s": "required", "k": "skill", "any": ["Python", "Java"], "level": 1, "t": "Python or Java"}, {"s": "required", "k": "skill", "skill": "Git", "level": 1, "t": "Git"}, {"s": "preferred", "k": "skill", "skill": "JavaScript", "level": 1, "t": "JavaScript"}]}, {"id": "S15", "title": "Frontend Developer", "org": "Barton Springs Apps", "type": "software", "loc": "Austin", "mode": "remote", "posted": "2026-10-16", "reqs": [{"s": "required", "k": "skill", "skill": "JavaScript", "level": 2, "t": "Advanced JavaScript"}, {"s": "required", "k": "skill", "skill": "Git", "level": 1, "t": "Git"}, {"s": "unclear", "k": "other", "t": "\"Portfolio of shipped work\""}, {"s": "preferred", "k": "skill", "skill": "Figma", "level": 1, "t": "Figma"}]}, {"id": "S16", "title": "Cloud Support Engineer", "org": "Wasatch Hosting", "type": "software", "loc": "Salt Lake City", "mode": "onsite", "posted": "2026-10-11", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["computer science", "engineering"], "alt": {"years": 2}, "t": "Bachelor's degree in computer science or engineering, or 2 years of equivalent experience"}, {"s": "required", "k": "skill", "skill": "Python", "level": 1, "t": "Python"}, {"s": "required", "k": "cert", "cert": "AWS Cloud Practitioner", "t": "AWS Cloud Practitioner"}]}, {"id": "S17", "title": "Associate Product Manager", "org": "Mission Bay Labs", "type": "product", "loc": "San Francisco", "mode": "hybrid", "posted": "2026-10-20", "reqs": [{"s": "required", "k": "degree", "level": 2, "t": "Bachelor's degree"}, {"s": "required", "k": "exp", "internships": 1, "t": "1 internship"}, {"s": "required", "k": "skill", "skill": "Agile / Scrum", "level": 1, "t": "Agile / Scrum"}, {"s": "preferred", "k": "skill", "skill": "SQL", "level": 1, "t": "SQL"}, {"s": "unclear", "k": "other", "t": "\"Strong product sense\""}]}, {"id": "S18", "title": "Product Analyst", "org": "Triangle Health Apps", "type": "product", "loc": "Raleigh", "mode": "remote", "posted": "2026-10-27", "reqs": [{"s": "required", "k": "degree", "level": 2, "t": "Bachelor's degree"}, {"s": "required", "k": "skill", "skill": "SQL", "level": 1, "t": "SQL"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}, {"s": "preferred", "k": "skill", "skill": "Google Analytics", "level": 1, "t": "Google Analytics"}]}, {"id": "S19", "title": "Marketing Coordinator", "org": "Peachtree Home Goods", "type": "marketing", "loc": "Atlanta", "mode": "hybrid", "posted": "2026-10-14", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["marketing", "business", "communications"], "t": "Bachelor's degree in marketing, business or communications"}, {"s": "required", "k": "skill", "skill": "Social media", "level": 1, "t": "Social media"}, {"s": "required", "k": "skill", "skill": "Copywriting", "level": 1, "t": "Copywriting"}, {"s": "preferred", "k": "skill", "skill": "Google Analytics", "level": 1, "t": "Google Analytics"}]}, {"id": "S20", "title": "SEO Specialist", "org": "Front Range Media", "type": "marketing", "loc": "Denver", "mode": "remote", "posted": "2026-10-22", "reqs": [{"s": "required", "k": "skill", "skill": "SEO", "level": 2, "t": "Advanced SEO"}, {"s": "required", "k": "skill", "skill": "Google Analytics", "level": 1, "t": "Google Analytics"}, {"s": "required", "k": "exp", "years": 1, "t": "1+ year of related experience"}, {"s": "preferred", "k": "cert", "cert": "Google Analytics certification", "t": "Google Analytics certification"}]}, {"id": "S21", "title": "Communications Associate", "org": "Liberty Bell Nonprofit Network", "type": "marketing", "loc": "Philadelphia", "mode": "hybrid", "posted": "2026-10-09", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["communications", "marketing", "political science"], "t": "Bachelor's degree in communications, marketing or political science"}, {"s": "required", "k": "skill", "skill": "Copywriting", "level": 2, "t": "Advanced Copywriting"}, {"s": "preferred", "k": "skill", "skill": "Public speaking", "level": 1, "t": "Public speaking"}]}, {"id": "S22", "title": "Sales Development Representative", "org": "Back Bay Software", "type": "sales", "loc": "Boston", "mode": "onsite", "posted": "2026-10-24", "reqs": [{"s": "required", "k": "degree", "level": 2, "alt": {"years": 2}, "t": "Bachelor's degree, or 2 years of equivalent experience"}, {"s": "required", "k": "skill", "skill": "Customer service", "level": 1, "t": "Customer service"}, {"s": "preferred", "k": "skill", "skill": "Salesforce", "level": 1, "t": "Salesforce"}, {"s": "unclear", "k": "other", "t": "\"Competitive drive\""}]}, {"id": "S23", "title": "Account Executive", "org": "Gotham Office Systems", "type": "sales", "loc": "New York", "mode": "hybrid", "posted": "2026-10-13", "reqs": [{"s": "required", "k": "exp", "years": 2, "t": "2+ years in sales"}, {"s": "required", "k": "skill", "skill": "Salesforce", "level": 1, "t": "Salesforce"}, {"s": "required", "k": "skill", "skill": "Public speaking", "level": 1, "t": "Public speaking"}]}, {"id": "S24", "title": "Customer Success Associate", "org": "Desert Bloom SaaS", "type": "customer", "loc": "Phoenix", "mode": "remote", "posted": "2026-10-26", "reqs": [{"s": "required", "k": "skill", "skill": "Customer service", "level": 1, "t": "Customer service"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}, {"s": "preferred", "k": "skill", "skill": "Salesforce", "level": 1, "t": "Salesforce"}]}, {"id": "S25", "title": "Client Support Specialist", "org": "Music Row Payments", "type": "customer", "loc": "Nashville", "mode": "onsite", "posted": "2026-10-19", "reqs": [{"s": "required", "k": "skill", "skill": "Customer service", "level": 2, "t": "Advanced Customer service"}, {"s": "required", "k": "exp", "years": 1, "t": "1+ year of related experience"}]}, {"id": "S26", "title": "HR Coordinator", "org": "North Star Manufacturing", "type": "hr", "loc": "Minneapolis", "mode": "hybrid", "posted": "2026-10-21", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["business", "psychology", "communications"], "t": "Bachelor's degree in business, psychology or communications"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}, {"s": "preferred", "k": "cert", "cert": "SHRM-CP", "t": "SHRM-CP"}]}, {"id": "S27", "title": "Talent Acquisition Associate", "org": "Keystone Health Partners", "type": "hr", "loc": "Pittsburgh", "mode": "hybrid", "posted": "2026-10-10", "reqs": [{"s": "required", "k": "degree", "level": 2, "t": "Bachelor's degree"}, {"s": "required", "k": "exp", "years": 1, "t": "1+ year in recruiting or HR"}, {"s": "unclear", "k": "other", "t": "\"Excellent people skills\""}]}, {"id": "S28", "title": "Supply Chain Analyst", "org": "Gulf Coast Distribution", "type": "operations", "loc": "Houston", "mode": "onsite", "posted": "2026-10-18", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["business", "engineering", "economics"], "t": "Bachelor's degree in business, engineering or economics"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 2, "t": "Advanced Excel"}, {"s": "preferred", "k": "skill", "skill": "SQL", "level": 1, "t": "SQL"}]}, {"id": "S29", "title": "Operations Associate", "org": "Buckeye Fulfillment", "type": "operations", "loc": "Columbus", "mode": "onsite", "posted": "2026-10-25", "reqs": [{"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}, {"s": "required", "k": "skill", "skill": "Project management", "level": 1, "t": "Project management"}]}, {"id": "S30", "title": "Project Coordinator", "org": "Cumberland Builders", "type": "project", "loc": "Nashville", "mode": "hybrid", "posted": "2026-10-17", "reqs": [{"s": "required", "k": "degree", "level": 2, "t": "Bachelor's degree"}, {"s": "required", "k": "skill", "skill": "Project management", "level": 1, "t": "Project management"}, {"s": "preferred", "k": "skill", "skill": "Agile / Scrum", "level": 1, "t": "Agile / Scrum"}, {"s": "preferred", "k": "cert", "cert": "PMP / CAPM", "t": "PMP / CAPM"}]}, {"id": "S31", "title": "Junior Program Manager", "org": "Rose City Energy", "type": "project", "loc": "Portland", "mode": "hybrid", "posted": "2026-10-23", "reqs": [{"s": "required", "k": "degree", "level": 2, "t": "Bachelor's degree"}, {"s": "required", "k": "exp", "years": 1, "t": "1+ year of related experience"}, {"s": "required", "k": "skill", "skill": "Project management", "level": 2, "t": "Advanced Project management"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}]}, {"id": "S32", "title": "UX Designer", "org": "Sunset Studio Digital", "type": "design", "loc": "Los Angeles", "mode": "hybrid", "posted": "2026-10-20", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["design", "psychology", "computer science"], "alt": {"years": 3}, "t": "Bachelor's degree in design, psychology or computer science, or 3 years of equivalent experience"}, {"s": "required", "k": "skill", "skill": "Figma", "level": 2, "t": "Advanced Figma"}, {"s": "unclear", "k": "other", "t": "\"Strong portfolio\""}]}, {"id": "S33", "title": "Graphic Designer", "org": "Biscayne Creative", "type": "design", "loc": "Miami", "mode": "onsite", "posted": "2026-08-30", "reqs": [{"s": "required", "k": "skill", "skill": "Adobe Creative Suite", "level": 2, "t": "Advanced Adobe Creative Suite"}, {"s": "unclear", "k": "other", "t": "\"Portfolio showing brand work\""}]}, {"id": "S34", "title": "Junior Mechanical Engineer", "org": "Motor City Components", "type": "engineering", "loc": "Detroit", "mode": "onsite", "posted": "2026-10-15", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["engineering"], "t": "Bachelor's degree in engineering"}, {"s": "required", "k": "skill", "skill": "CAD", "level": 1, "t": "CAD"}, {"s": "preferred", "k": "cert", "cert": "EIT / FE exam", "t": "EIT / FE exam"}]}, {"id": "S35", "title": "Civil Engineering Assistant", "org": "Valley Infrastructure Group", "type": "engineering", "loc": "Phoenix", "mode": "onsite", "posted": "2026-10-12", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["engineering"], "t": "Bachelor's degree in engineering"}, {"s": "required", "k": "skill", "skill": "CAD", "level": 1, "t": "CAD"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}, {"s": "required", "k": "exp", "internships": 1, "t": "1 internship"}]}, {"id": "S36", "title": "Registered Nurse, New Grad", "org": "Lakefront Medical Center", "type": "healthcare", "loc": "Chicago", "mode": "onsite", "posted": "2026-10-24", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["nursing"], "t": "Bachelor's degree in nursing"}, {"s": "required", "k": "cert", "cert": "RN license", "t": "RN license"}, {"s": "required", "k": "exp", "internships": 1, "t": "One clinical rotation or internship"}]}, {"id": "S37", "title": "Health Data Coordinator", "org": "Harbor Community Health", "type": "healthcare", "loc": "Boston", "mode": "hybrid", "posted": "2026-10-16", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["health sciences", "statistics", "nursing", "economics"], "t": "Bachelor's degree in health sciences, statistics, nursing or economics"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}, {"s": "preferred", "k": "skill", "skill": "SQL", "level": 1, "t": "SQL"}]}, {"id": "S38", "title": "Elementary School Teacher", "org": "Mile High Public Schools", "type": "education", "loc": "Denver", "mode": "onsite", "posted": "2026-10-13", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["education"], "t": "Bachelor's degree in education"}, {"s": "required", "k": "cert", "cert": "Teaching license", "t": "Teaching license"}]}, {"id": "S39", "title": "Instructional Designer", "org": "Pacific Learning Co.", "type": "education", "loc": "San Diego", "mode": "remote", "posted": "2026-10-22", "reqs": [{"s": "required", "k": "degree", "level": 2, "fields": ["education", "design", "communications", "psychology"], "t": "Bachelor's degree in education, design, communications or psychology"}, {"s": "required", "k": "skill", "skill": "Adobe Creative Suite", "level": 1, "t": "Adobe Creative Suite"}, {"s": "preferred", "k": "degree", "level": 3, "t": "Master's degree"}]}, {"id": "S40", "title": "Paralegal", "org": "Capitol Hill Law Group", "type": "legal", "loc": "Washington DC", "mode": "onsite", "posted": "2026-10-21", "reqs": [{"s": "required", "k": "degree", "level": 1, "t": "Associate degree"}, {"s": "preferred", "k": "cert", "cert": "Paralegal certificate", "t": "Paralegal certificate"}, {"s": "unclear", "k": "other", "t": "\"Strong attention to detail\""}]}, {"id": "S41", "title": "Legal Operations Analyst", "org": "Midtown Legal Services", "type": "legal", "loc": "New York", "mode": "hybrid", "posted": "2026-10-26", "reqs": [{"s": "required", "k": "degree", "level": 2, "t": "Bachelor's degree"}, {"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}, {"s": "preferred", "k": "degree", "level": 2, "fields": ["law", "political science"], "t": "Bachelor's degree in law or political science"}]}, {"id": "S42", "title": "Administrative Assistant", "org": "Queen City Realty", "type": "admin", "loc": "Charlotte", "mode": "onsite", "posted": "2026-10-25", "reqs": [{"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}, {"s": "required", "k": "exp", "years": 1, "t": "1+ year of related experience"}]}, {"id": "S43", "title": "Office Coordinator", "org": "Golden Gate Architecture", "type": "admin", "loc": "San Francisco", "mode": "onsite", "posted": "2026-10-14", "reqs": [{"s": "required", "k": "skill", "skill": "Excel", "level": 1, "t": "Excel"}, {"s": "required", "k": "skill", "skill": "Customer service", "level": 1, "t": "Customer service"}, {"s": "preferred", "k": "degree", "level": 2, "t": "Bachelor's degree"}]}];
+const TAX = {"types": {"data": "Data & analytics", "business": "Business analysis & consulting", "finance": "Finance & accounting", "software": "Software engineering", "product": "Product management", "marketing": "Marketing & communications", "sales": "Sales", "customer": "Customer success & support", "hr": "Human resources & recruiting", "operations": "Operations & supply chain", "project": "Project management", "design": "Design & UX", "engineering": "Engineering (non-software)", "healthcare": "Healthcare", "education": "Education & training", "legal": "Legal", "admin": "Administrative"}, "fields": ["economics", "business", "finance", "accounting", "statistics", "mathematics", "computer science", "engineering", "marketing", "communications", "psychology", "design", "nursing", "health sciences", "education", "political science", "law", "other"], "skills": ["SQL", "Excel", "Python", "R", "Stata", "Tableau", "Power BI", "Java", "JavaScript", "Git", "Figma", "Adobe Creative Suite", "CAD", "Salesforce", "Google Analytics", "SEO", "Social media", "Copywriting", "Financial modeling", "Accounting (GAAP)", "Project management", "Agile / Scrum", "Customer service", "Public speaking"], "certs": ["CFA Level I", "CPA", "PMP / CAPM", "SHRM-CP", "RN license", "Teaching license", "EIT / FE exam", "Paralegal certificate", "AWS Cloud Practitioner", "Google Analytics certification"], "cities": ["Atlanta", "Austin", "Boston", "Charlotte", "Chicago", "Columbus", "Dallas", "Denver", "Detroit", "Houston", "Los Angeles", "Miami", "Minneapolis", "Nashville", "New York", "Philadelphia", "Phoenix", "Pittsburgh", "Portland", "Raleigh", "Salt Lake City", "San Diego", "San Francisco", "Seattle", "Washington DC"], "snapshot": "2026-10-29", "stale_days": 45};
+const SNAPSHOT = TAX.snapshot, STALE_DAYS = TAX.stale_days;
+const TYPES = TAX.types, FIELDS = TAX.fields, SKILLS = TAX.skills, CERTS = TAX.certs, CITIES = TAX.cities;
+const ANYWHERE = 'Anywhere in the US';
+const DEG = ['No degree',"Associate","Bachelor's","Master's","PhD"];
+const LVN = ['none','basic','advanced'];
+const MODE = {onsite:'On-site', hybrid:'Hybrid', remote:'Remote'};
+
+const SAMPLES = {
+ Alex:{note:'Economics undergraduate, SQL and Excel basics, one internship. Location and work mode not set yet.',
+   degree:2,field:'economics',skills:{SQL:1,Excel:1},internships:1,years:0,certs:[],interests:['data','business'],locs:[],mode:''},
+ Maya:{note:'No degree, four years of work with advanced SQL and Excel. Shows the equivalent-experience route.',
+   degree:0,field:'other',skills:{SQL:2,Excel:2,Tableau:1},internships:0,years:4,certs:[],interests:['data','business','operations'],locs:[ANYWHERE],mode:'any'},
+ Jordan:{note:"Finance master's, CFA Level I, two internships. Open to Chicago, New York or Charlotte.",
+   degree:3,field:'finance',skills:{SQL:1,Excel:2,Python:1,'Financial modeling':1},internships:2,years:1,certs:['CFA Level I'],interests:['finance','business'],locs:['Chicago','New York','Charlotte'],mode:'any'},
+ Sam:{note:'Computer science graduate with Python, Java and Git. Wants software or product roles on the West Coast.',
+   degree:2,field:'computer science',skills:{Python:2,Java:1,Git:1,JavaScript:1,SQL:1},internships:1,years:0,certs:[],interests:['software','product'],locs:['Seattle','San Francisco','Los Angeles'],mode:'any'},
+};
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const state = {open:null, hidden:new Set(), review:new Set(), othersOpen:false,
+  skills:{}, certs:new Set(), interests:new Set(), locs:new Set(),
+  saved:new Set(), moves:[], checked:null};
+/* saved roles and planned moves stay in this browser only */
+function loadStore(){ try{ const d=JSON.parse(localStorage.getItem('cp_plan')||'{}'); state.saved=new Set((d.saved||[]).filter(id=>JOBS.some(j=>j.id===id))); state.moves=d.moves||[]; }catch(e){} }
+function saveStore(){ try{ localStorage.setItem('cp_plan', JSON.stringify({saved:[...state.saved], moves:state.moves})); }catch(e){} }
+loadStore();
+
+/* ---------- build form ---------- */
+$('#protoNote').textContent = `Prototype · ${JOBS.length} simulated US postings · ${Object.keys(TYPES).length} job categories · snapshot ${fmt(SNAPSHOT)}`;
+$('#samples').innerHTML = Object.keys(SAMPLES).map(k=>`<button type="button" data-s="${k}" aria-pressed="false">${k}</button>`).join('');
+$('#field').innerHTML = FIELDS.map(f=>`<option value="${f}">${f[0].toUpperCase()+f.slice(1)}</option>`).join('');
+$('#skills').innerHTML = SKILLS.map(s=>`<button type="button" class="chip" data-skill="${esc(s)}" data-level="0">${esc(s)}</button>`).join('');
+$('#certs').innerHTML = CERTS.map(c=>`<button type="button" class="chip" data-cert="${esc(c)}" aria-pressed="false">${esc(c)}</button>`).join('');
+$('#interests').innerHTML = Object.entries(TYPES).map(([k,v])=>`<button type="button" class="chip" data-int="${k}" aria-pressed="false">${esc(v)}</button>`).join('');
+$('#locs').innerHTML = [ANYWHERE,...CITIES].map(c=>`<button type="button" class="chip" data-loc="${esc(c)}" aria-pressed="false">${esc(c)}</button>`).join('');
+
+function syncChips(){
+  document.querySelectorAll('[data-skill]').forEach(b=>{const l=state.skills[b.dataset.skill]||0; b.dataset.level=l; b.innerHTML=esc(b.dataset.skill)+(l?`<small>${l===2?'adv':'basic'}</small>`:''); b.setAttribute('aria-label',`${b.dataset.skill}: ${LVN[l]}`);});
+  document.querySelectorAll('[data-cert]').forEach(b=>b.setAttribute('aria-pressed',state.certs.has(b.dataset.cert)));
+  document.querySelectorAll('[data-int]').forEach(b=>b.setAttribute('aria-pressed',state.interests.has(b.dataset.int)));
+  document.querySelectorAll('[data-loc]').forEach(b=>b.setAttribute('aria-pressed',state.locs.has(b.dataset.loc)));
+}
+function loadProfile(p){
+  $('#deg').value=p.degree; $('#field').value=p.field;
+  state.skills={...p.skills}; state.certs=new Set(p.certs);
+  $('#intern').value=p.internships; $('#years').value=p.years;
+  if(p.interests){ state.interests=new Set(p.interests); state.locs=new Set(p.locs); $('#mode').value=p.mode; }
+  syncChips();
+}
+function readProfile(){
+  return {degree:+$('#deg').value, field:$('#field').value, skills:{...state.skills},
+    internships:Math.max(0,+$('#intern').value||0), years:Math.max(0,+$('#years').value||0), certs:[...state.certs],
+    interests:[...state.interests], locs:[...state.locs], mode:$('#mode').value};
+}
+function pickSample(key){
+  document.querySelectorAll('#samples button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.s===key));
+  $('#sampleNote').textContent = SAMPLES[key].note;
+  loadProfile(SAMPLES[key]); state.open=null; state.hidden.clear(); $('#extracted').hidden=true; render();
+}
+$('#samples').addEventListener('click',e=>{const b=e.target.closest('button'); if(b) pickSample(b.dataset.s)});
+const rail=document.querySelector('.rail');
+rail.addEventListener('change',e=>{ if(e.target.id!=='cv') render(); });
+rail.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.skill){ const s=b.dataset.skill, l=((state.skills[s]||0)+1)%3; if(l) state.skills[s]=l; else delete state.skills[s]; }
+  else if(b.dataset.cert){ const c=b.dataset.cert; state.certs.has(c)?state.certs.delete(c):state.certs.add(c); }
+  else if(b.dataset.int){ const c=b.dataset.int; state.interests.has(c)?state.interests.delete(c):state.interests.add(c); }
+  else if(b.dataset.loc){ const c=b.dataset.loc; state.locs.has(c)?state.locs.delete(c):state.locs.add(c); }
+  else if(b.dataset.clear){ const k=b.dataset.clear; if(k==='skills') state.skills={}; else state[k].clear(); }
+  else return;
+  syncChips(); state.open=null; render();
+});
+
+/* ---------- step 1 demo: keyword extraction (stands in for a Claude API call) ---------- */
+const CERT_PATTERNS = {"CFA Level I":/\bcfa\b/,"CPA":/\bcpa\b/,"PMP / CAPM":/\b(pmp|capm)\b/,"SHRM-CP":/shrm/,"RN license":/\brn\b|registered nurse/,
+  "Teaching license":/teaching (license|licence|certificate)/,"EIT / FE exam":/\b(eit|fe exam)\b/,"Paralegal certificate":/paralegal cert/,
+  "AWS Cloud Practitioner":/\baws\b/,"Google Analytics certification":/google analytics cert/};
+function reEsc(s){return s.replace(/[.*+?^${}()|[\]\\\/]/g,'\\$&');}
+$('#extract').addEventListener('click',()=>{
+  const t=$('#cv').value.toLowerCase(); const out=$('#extracted');
+  if(!t.trim()){ out.hidden=false; out.textContent='Paste some CV text first.'; return; }
+  const found=[]; let deg=null;
+  if(/ph\.?d|doctorate/.test(t)) deg=4; else if(/master|m\.s\.|msc|mba|m\.a\./.test(t)) deg=3;
+  else if(/bachelor|b\.a\.|b\.s\.|\bba\b|\bbs\b|undergraduate/.test(t)) deg=2; else if(/associate/.test(t)) deg=1;
+  if(deg!==null){$('#deg').value=deg; found.push(DEG[deg]);}
+  const f=FIELDS.find(x=>x!=='other'&&t.includes(x)); if(f){$('#field').value=f; found.push(f);}
+  const sentences=t.split(/[.\n;]/); const sk={};
+  SKILLS.forEach(s=>{
+    const re=new RegExp('(^|[^a-z])'+reEsc(s.toLowerCase())+'([^a-z]|$)');
+    const hit=sentences.filter(x=>re.test(x));
+    if(hit.length){const adv=hit.some(x=>/advanced|proficient|expert|strong/.test(x)); sk[s]=adv?2:1; found.push(s+(adv?' (advanced)':''));}
+  });
+  state.skills=sk;
+  const words={one:1,two:2,three:3,four:4};
+  const im=t.match(/(\d+|one|two|three|four)\s+internships?/);
+  const ic=im?(words[im[1]]||+im[1]):(t.match(/\bintern(ship)?\b/g)||[]).length;
+  $('#intern').value=Math.min(ic,6); if(ic) found.push(ic+' internship'+(ic>1?'s':''));
+  const ym=t.match(/(\d+)\+?\s+years?/); $('#years').value=ym?+ym[1]:0; if(ym) found.push(ym[1]+' years of work');
+  state.certs=new Set(Object.keys(CERT_PATTERNS).filter(c=>CERT_PATTERNS[c].test(t))); state.certs.forEach(c=>found.push(c));
+  syncChips(); out.hidden=false;
+  out.textContent = found.length? 'Found: '+found.join(', ')+'. Check the fields below and correct anything wrong.' : 'Nothing recognised. Fill in the fields below by hand.';
+  state.open=null; render();
+});
+
+/* ---------- step 4: rule check (no AI here) ---------- */
+function days(d){const [y,m,dd]=d.split('-').map(Number),[Y,M,D]=SNAPSHOT.split('-').map(Number);return Math.round((Date.UTC(Y,M-1,D)-Date.UTC(y,m-1,dd))/864e5);}
+function fmt(d){const [y,m,dd]=d.split('-').map(Number);return dd+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1]+' '+y;}
+function cap(s){return s[0].toUpperCase()+s.slice(1)}
+const skName = r => r.skill || r.any.join('/');
+
+function evalReq(r,p){
+  if(r.s==='unclear'||r.k==='other') return {state:'unclear',note:'Rules cannot check this wording. Confirm with the employer.'};
+  if(r.k==='degree'){
+    const lvOk=p.degree>=r.level, fOk=!r.fields||r.fields.includes(p.field);
+    if(lvOk&&fOk) return {state:'met',note:p.degree?`You have a ${DEG[p.degree]} in ${p.field}`:''};
+    if(r.alt&&p.years>=r.alt.years) return {state:'met',note:`Met through ${p.years} years of experience (equivalent route)`};
+    return {state:'missing',gap:'qualification',note:!lvOk?`You have: ${DEG[p.degree]}`:`Your field (${p.field}) is not listed`};
+  }
+  if(r.k==='skill'){
+    const have=r.any?Math.max(...r.any.map(s=>p.skills[s]||0)):(p.skills[r.skill]||0);
+    if(have>=r.level) return {state:'met',note:r.any?'':`You: ${LVN[have]}`};
+    return {state:'missing',gap:'skill',note:`You: ${LVN[have]}, needed: ${LVN[r.level]}`};
+  }
+  if(r.k==='exp'){
+    if(r.internships!=null && p.internships<r.internships) return {state:'missing',gap:'qualification',note:`You: ${p.internships} internship${p.internships===1?'':'s'}`};
+    if(r.years!=null && p.years<r.years) return {state:'missing',gap:'qualification',note:`You: ${p.years} years`};
+    return {state:'met',note:''};
+  }
+  if(r.k==='cert') return p.certs.includes(r.cert)?{state:'met',note:''}:{state:'missing',gap:'qualification',note:'Not on your profile'};
+  return {state:'unclear',note:'Unknown requirement type'};
+}
+
+function analyse(job,p){
+  const rs=job.reqs.map(r=>({r,...evalReq(r,p)}));
+  const age=days(job.posted);
+  const missing=rs.filter(x=>x.r.s==='required'&&x.state==='missing');
+  const unclear=rs.filter(x=>x.r.s==='unclear');
+  const confirm=[], conflicts=[];
+  if(!p.locs.length) confirm.push('location');
+  else if(!p.locs.includes(ANYWHERE)&&job.mode!=='remote'&&!p.locs.includes(job.loc)) conflicts.push(`Located in ${job.loc}; you chose ${p.locs.join(', ')}`);
+  if(!job.mode) confirm.push('work mode (not stated in posting)');
+  else if(!p.mode) confirm.push('work mode');
+  else if(p.mode!=='any'&&p.mode!==job.mode) conflicts.push(`${MODE[job.mode]}; you chose ${MODE[p.mode]}`);
+  let status;
+  if(age>STALE_DAYS) status='withheld';
+  else if(conflicts.length) status='excluded';
+  else if(missing.length) status='advanced';
+  else if(unclear.length||confirm.length) status='confirm';
+  else status='ready';
+  // fit score ranks within a list, never changes the status
+  const sk=rs.filter(x=>x.r.k==='skill'); const skillShare=sk.length?sk.filter(x=>x.state==='met').length/sk.length:.5;
+  const pref=rs.filter(x=>x.r.s==='preferred'); const prefShare=pref.length?pref.filter(x=>x.state==='met').length/pref.length:.5;
+  const interest=p.interests.includes(job.type)?1:0;
+  const fit=Math.round(100*(.5*skillShare+.3*interest+.2*prefShare));
+  return {job,rs,age,missing,unclear,confirm,conflict:conflicts.join('; '),status,fit,interest};
+}
+
+/* ---------- steps 5–6: explanation and next actions (Claude writes these in the full build) ---------- */
+function why(a,p){
+  const met=a.rs.filter(x=>x.state==='met');
+  const skills=met.filter(x=>x.r.k==='skill').map(x=>skName(x.r));
+  const deg=met.find(x=>x.r.k==='degree'&&x.r.s==='required');
+  const parts=[];
+  if(deg) parts.push(deg.note.includes('equivalent')?'your experience counts as the equivalent of the degree':`your ${DEG[p.degree].toLowerCase()} meets the degree requirement`);
+  if(skills.length) parts.push(`your ${skills.join(' and ')} cover${skills.length===1?'s':''} the skills listed`);
+  parts.push(a.interest?`it matches your interest in ${TYPES[a.job.type].toLowerCase()}`:`it is outside the interests you selected`);
+  let s=cap(parts.join(', '))+'.';
+  if(a.missing.length){
+    const sg=a.missing.filter(x=>x.gap==='skill').map(x=>x.r.t), qg=a.missing.filter(x=>x.gap==='qualification').map(x=>x.r.t);
+    s+=' Still missing:'+(sg.length?` skills (${sg.join('; ')})`:'')+(sg.length&&qg.length?' and':'')+(qg.length?` qualifications (${qg.join('; ')})`:'')+'.';
+  }
+  return s;
+}
+function devStep(x,p){
+  const r=x.r;
+  if(r.k==='skill'){
+    if(r.any) return [`Learn one of ${r.any.join(', ')}`,'Pick the one used most in the roles you want. Take an intro course and finish one small project.'];
+    const have=p.skills[r.skill]||0;
+    if(have===0) return [`Learn ${r.skill} basics`,'A short intro course, then one project you can show on your CV.'];
+    return [`Take ${r.skill} from basic to advanced`, r.skill==='SQL'?'Practise joins, window functions and CTEs on a real dataset.':'Finish one larger project that uses it end to end, and add it to your CV.'];
+  }
+  if(r.k==='exp'){
+    if(r.internships!=null){const n=r.internships-p.internships;return [`Get ${n} more internship${n>1?'s':''}`,'Look for roles with hands-on work in this field.'];}
+    return [`Build ${r.years}+ year${r.years>1?'s':''} of related experience`,'A ready-to-apply role from your list is one way to get there.'];
+  }
+  if(r.k==='cert') return [`Earn the ${r.cert}`,'Check the exam dates and study time first, and plan around them.'];
+  if(r.k==='degree') return [r.t,'A large commitment. Check your ready roles first: they may already lead toward this goal without new borrowing.'];
+  return [r.t,''];
+}
+const ORDER={skill:0,exp:1,cert:2,degree:3};
+function nextActions(a,p){
+  if(a.status==='advanced') return a.missing.slice().sort((x,y)=>ORDER[x.r.k]-ORDER[y.r.k]).map(x=>devStep(x,p));
+  const out=[];
+  if(a.confirm.length) out.push(['Confirm '+a.confirm.join(' and '),'These are your must-have constraints. Set them in your profile or check with the employer.']);
+  a.unclear.forEach(x=>out.push([`Prepare evidence for ${x.r.t}`,'Have one concrete example ready for your CV and the interview.']));
+  const sk=a.rs.filter(x=>x.r.k==='skill'&&x.state==='met').map(x=>skName(x.r));
+  out.push(['Tailor your CV',`Lead with ${sk.length?sk.join(' and '):'your most relevant experience'}, with one measurable result`+(p.internships?' from your internship.':'.')]);
+  a.rs.filter(x=>x.r.s==='preferred'&&x.state==='missing').forEach(x=>out.push([`${x.r.t} is preferred, not required`,'You can apply without it. Do not let it stop you.']));
+  out.push(['Practise the interview','Prepare a two-minute walkthrough of one piece of work you did, start to finish.']);
+  return out;
+}
+
+/* ---------- render ---------- */
+const BADGE={ready:['b-ready','Ready to apply'],confirm:['b-confirm','Needs confirmation'],advanced:['b-advanced','Work toward'],withheld:['b-withheld','Label withheld'],excluded:['b-withheld','Outside your constraints']};
+const TAG={required:'Required',preferred:'Preferred',unclear:'Unclear'};
+const RES={met:['r-met','✓ Met'],missing:['r-missing','✕ Missing'],unclear:['r-unclear','? Unclear']};
+
+function card(a,p){
+  const j=a.job, open=state.open===j.id, [bc,bl]=BADGE[a.status];
+  const sg=a.missing.filter(x=>x.gap==='skill').length, qg=a.missing.length-sg;
+  const gapTxt=a.status==='advanced'?[sg&&`${sg} skill gap${sg>1?'s':''}`,qg&&`${qg} qualification gap${qg>1?'s':''}`].filter(Boolean).join(' · '):'';
+  const where=`${esc(j.org)} · ${esc(j.loc)} · ${j.mode?MODE[j.mode]:'Work mode not stated'}`;
+  const rows=a.rs.map(x=>{
+    const [rc,rl]=a.status==='withheld'?['r-unclear','– Not checked']:RES[x.state];
+    return `<tr><td>${esc(x.r.t)}</td><td><span class="tag t-${x.r.s}">${TAG[x.r.s]}</span></td><td><span class="res ${rc}">${rl}</span>${x.note&&a.status!=='withheld'?`<div class="rnote">${esc(x.note)}</div>`:''}</td></tr>`;}).join('');
+  let right;
+  if(a.status==='withheld'){
+    const req=state.review.has(j.id);
+    right=`<div class="notice">This posting is ${a.age} days old. Its details may have changed, so no eligibility label is shown until it is rechecked.</div>
+      <div><button class="linkbtn" data-review="${j.id}" ${req?'disabled':''}>${req?'Human review requested':'Request human review'}</button></div>`;
+  } else {
+    const acts=nextActions(a,p);
+    right=`<h4>Why it fits</h4><p class="why">${esc(why(a,p))}</p>
+      <p class="ai-note">Demo text from a template. In the full build Claude writes this explanation. The rules on the left still decide eligibility.</p>
+      <h4>${a.status==='advanced'?'Development path':'Next actions'}</h4>
+      <ol class="steps">${acts.map(([t,d])=>`<li><strong>${esc(t)}</strong><span>${esc(d)}</span></li>`).join('')}</ol>`;
+  }
+  return `<article class="card${open?' open':''}" data-id="${j.id}">
+    <button class="card-head" type="button" aria-expanded="${open}" data-toggle="${j.id}">
+      <div class="ch-main">
+        <div class="ch-top"><span class="jid">${j.id}</span><span class="badge ${bc}">${bl}</span>${gapTxt?`<span class="gaps">${gapTxt}</span>`:''}</div>
+        <h3>${esc(j.title)}</h3><p class="org">${where}</p><span class="cat">${esc(TYPES[j.type])}</span>
+      </div>
+      <div class="fit" aria-label="Fit score ${a.fit} of 100"><span class="fitnum">${a.status==='withheld'?'–':a.fit}</span><span class="fitlbl">fit</span><div class="fitbar"><i style="width:${a.status==='withheld'?0:a.fit}%"></i></div></div>
+    </button>
+    <div class="card-body" ${open?'':'hidden'}>
+      <div class="cols">
+        <section><h4>Requirements check</h4><div class="tablewrap"><table class="reqs">${rows}</table></div></section>
+        <section>${right}</section>
+      </div>
+      <div class="card-foot"><span class="mono">Simulated posting ${j.id} · posted ${fmt(j.posted)} · ${a.age} days ago</span>
+        <span class="foot-actions"><button class="linkbtn" data-save="${j.id}" aria-pressed="${state.saved.has(j.id)}">${state.saved.has(j.id)?'★ Saved to plan':'☆ Save to plan'}</button>
+        ${j.custom?'':`<button class="linkbtn" data-hide="${j.id}">Not for me</button>`}</span></div>
+    </div>
+  </article>`;
+}
+
+const RANK={ready:0,confirm:1,advanced:2,withheld:3,excluded:4};
+function render(){
+  const p=readProfile();
+  const all=JOBS.filter(j=>!state.hidden.has(j.id)).map(j=>analyse(j,p));
+  const mine=all.filter(a=>!p.interests.length||p.interests.includes(a.job.type));
+  const others=all.filter(a=>!mine.includes(a)&&a.status!=='excluded').sort((a,b)=>RANK[a.status]-RANK[b.status]||b.fit-a.fit);
+  const ready=mine.filter(a=>a.status==='ready'||a.status==='confirm').sort((a,b)=>b.fit-a.fit);
+  const adv=mine.filter(a=>a.status==='advanced').sort((a,b)=>a.missing.length-b.missing.length||b.fit-a.fit);
+  const held=mine.filter(a=>a.status==='withheld');
+  const excl=mine.filter(a=>a.status==='excluded');
+  const nReady=ready.filter(a=>a.status==='ready').length, nConf=ready.length-nReady;
+
+  let h=`<div class="summary">
+    <span class="pill"><i style="background:var(--ok)"></i>${nReady} ready</span>
+    <span class="pill"><i style="background:var(--warn)"></i>${nConf} need confirmation</span>
+    <span class="pill"><i style="background:var(--accent)"></i>${adv.length} to work toward</span>
+    ${held.length?`<span class="pill"><i style="background:var(--muted)"></i>${held.length} withheld</span>`:''}
+    ${excl.length?`<span class="pill"><i style="background:var(--line)"></i>${excl.length} outside your constraints</span>`:''}
+  </div>`;
+  if(p.interests.length) h+=`<p class="hint" style="margin:-8px 0 16px">Showing ${p.interests.map(t=>esc(TYPES[t])).join(', ')}.</p>`;
+  if(state.hidden.size) h+=`<div class="hiddenbar">${state.hidden.size} posting${state.hidden.size>1?'s':''} hidden as not for you. <button class="linkbtn" id="undo">Show again</button></div>`;
+
+  h+=`<section class="group"><div class="ghead"><h2>Ready to apply</h2><p>Every required item is met. Some need a quick confirmation first.</p></div>
+    <div class="list">${ready.length?ready.map(a=>card(a,p)).join(''):'<div class="empty">No roles in your categories meet every required item yet. The roles below show what to work on.</div>'}</div></section>`;
+  h+=movesPanel(p, mine);
+  h+=`<section class="group"><div class="ghead"><h2>Work toward</h2><p>Gaps remain. Each gap is marked as a skill or a qualification. Fewest gaps first.</p></div>
+    <div class="list">${adv.length?adv.map(a=>card(a,p)).join(''):'<div class="empty">No roles to work toward in your categories.</div>'}</div></section>`;
+  if(held.length) h+=`<section class="group"><div class="ghead"><h2>Needs a recheck</h2><p>Postings older than ${STALE_DAYS} days get no eligibility label.</p></div>
+    <div class="list">${held.map(a=>card(a,p)).join('')}</div></section>`;
+  if(excl.length) h+=`<details class="excluded group"><summary>${excl.length} role${excl.length>1?'s':''} outside your location or work-mode constraints</summary>
+    <ul>${excl.map(a=>`<li><b>${esc(a.job.title)}</b>, ${esc(a.job.org)}: ${esc(a.conflict)}</li>`).join('')}</ul></details>`;
+  if(others.length){
+    const nr=others.filter(a=>a.status==='ready'||a.status==='confirm').length;
+    h+=`<details class="others group" id="othersBox" ${state.othersOpen?'open':''}><summary>Other categories <span>${others.length} roles outside your interests, ${nr} ready or nearly ready</span></summary>
+      <div class="list">${others.map(a=>card(a,p)).join('')}</div></details>`;
+  }
+  h+=`<p class="rule">AI interprets skills and explains fit. Rules check hard requirements. A high fit score never overrides a missing requirement, and unknowns stay flagged.</p>`;
+  $('#results').innerHTML=h;
+  const ob=$('#othersBox'); if(ob) ob.addEventListener('toggle',()=>{state.othersOpen=ob.open});
+  $('#planCount').textContent=state.saved.size+state.moves.length;
+  if(state.checked) renderCheck();
+  if(currentView()==='plan') renderPlan();
+}
+
+$('#main').addEventListener('click',e=>{
+  const t=e.target.closest('[data-toggle],[data-hide],[data-review],[data-save],[data-addmove],[data-dropmove],[data-sample-post],#undo,#runCheck,#copyPlan,#clearPlan'); if(!t) return;
+  const d=t.dataset;
+  if(d.toggle){state.open=state.open===d.toggle?null:d.toggle;}
+  else if(d.hide){state.hidden.add(d.hide); state.open=null;}
+  else if(d.review){state.review.add(d.review);}
+  else if(d.save){const id=d.save; if(state.saved.has(id)){state.saved.delete(id); toast('Removed from your plan');} else {state.saved.add(id); toast('Saved to your plan');} saveStore();}
+  else if(d.addmove){const m=JSON.parse(d.addmove); if(!state.moves.some(x=>x.label===m.label)){state.moves.push(m); saveStore(); toast('Added to your plan');}}
+  else if(d.dropmove){state.moves=state.moves.filter(x=>x.label!==d.dropmove); saveStore();}
+  else if(d.samplePost!=null){$('#posting').value=SAMPLE_POSTS[+d.samplePost]; runCheck(); return;}
+  else if(t.id==='runCheck'){runCheck(); return;}
+  else if(t.id==='copyPlan'){copyPlan(); return;}
+  else if(t.id==='clearPlan'){state.saved.clear(); state.moves=[]; saveStore();}
+  else if(t.id==='undo'){state.hidden.clear();}
+  render();
+});
+
+function toast(msg){
+  const el=document.createElement('div'); el.className='toast'; el.textContent=msg; el.setAttribute('role','status');
+  document.body.appendChild(el); setTimeout(()=>el.remove(),1800);
+}
+
+/* ---------- next moves: which single step opens the most roles ---------- */
+const EFFORT={skill1:'Typical: a few weeks', skill2:'Typical: 1–3 months of practice', cert:'Typical: a few months of study',
+  intern:'Typical: one semester or summer', years:'Typical: a year or more of work', degree:'Typical: 1–2 years plus tuition'};
+function moveKey(r,p){
+  if(r.k==='skill'){
+    const opts=r.any||[r.skill], s=opts[0], name=opts.join(' or ');
+    return [{kind:'skill',skill:s,level:r.level,
+      label:(p.skills[s]||0)===0&&r.level===1?`Learn ${name} basics`:`Build ${name} to ${LVN[r.level]} level`,
+      effort:r.level===2?'skill2':'skill1'}];
+  }
+  if(r.k==='cert') return [{kind:'cert',cert:r.cert,label:`Earn the ${r.cert}`,effort:'cert'}];
+  if(r.k==='exp'&&r.internships!=null) return [{kind:'intern',n:r.internships,label:`Reach ${r.internships} internship${r.internships>1?'s':''}`,effort:'intern'}];
+  if(r.k==='exp'&&r.years!=null) return [{kind:'years',n:r.years,label:`Reach ${r.years}+ year${r.years>1?'s':''} of related work`,effort:'years'}];
+  if(r.k==='degree'){
+    if(r.level>Math.max(2,p.degree+1)) return []; // suggest the next sensible degree, not one two levels up
+    const field=(!r.fields||r.fields.includes(p.field))?p.field:r.fields[0];
+    return [{kind:'degree',level:r.level,field,label:`Get a ${DEG[r.level].toLowerCase()} degree`+(field!==p.field?` in ${field}`:''),effort:'degree'}];
+  }
+  return [];
+}
+function applyMove(p,m){
+  const q={...p, skills:{...p.skills}, certs:[...p.certs]};
+  if(m.kind==='skill') q.skills[m.skill]=Math.max(q.skills[m.skill]||0,m.level);
+  if(m.kind==='cert') q.certs.push(m.cert);
+  if(m.kind==='intern') q.internships=Math.max(q.internships,m.n);
+  if(m.kind==='years') q.years=Math.max(q.years,m.n);
+  if(m.kind==='degree'){ if(m.level>q.degree||m.field!==q.field){ q.degree=Math.max(q.degree,m.level); q.field=m.field; } }
+  return q;
+}
+function computeMoves(p,scope){
+  const pool=scope.filter(a=>a.status!=='excluded'&&a.status!=='withheld');
+  const okBefore=new Set(pool.filter(a=>a.status==='ready'||a.status==='confirm').map(a=>a.job.id));
+  const gapsBefore=Object.fromEntries(pool.map(a=>[a.job.id,a.missing.length]));
+  const cands=new Map();
+  pool.filter(a=>a.status==='advanced').forEach(a=>a.missing.forEach(x=>moveKey(x.r,p).forEach(m=>cands.set(m.label,m))));
+  const out=[];
+  cands.forEach(m=>{
+    const q=applyMove(p,m); let unlock=[], closer=0;
+    pool.forEach(a=>{ const b=analyse(a.job,q);
+      if(!okBefore.has(a.job.id)&&(b.status==='ready'||b.status==='confirm')) unlock.push(a.job.title);
+      else if(b.missing.length<gapsBefore[a.job.id]) closer++; });
+    if(unlock.length||closer) out.push({...m,unlock,closer});
+  });
+  const rank=m=>m.unlock.length*10+m.closer;
+  out.sort((a,b)=>(a.kind==='degree')-(b.kind==='degree')||rank(b)-rank(a));
+  const nonDeg=out.filter(m=>m.kind!=='degree').slice(0,4);
+  const deg=out.filter(m=>m.kind==='degree').sort((a,b)=>rank(b)-rank(a)||a.level-b.level)[0];
+  return {list:deg?[...nonDeg,deg]:nonDeg, best:nonDeg[0], deg};
+}
+function movesPanel(p,mine){
+  const {list,best,deg}=computeMoves(p,mine);
+  if(!list.length) return '';
+  const rows=list.map(m=>{
+    const inPlan=state.moves.some(x=>x.label===m.label);
+    const data=esc(JSON.stringify({label:m.label,effort:EFFORT[m.effort],unlock:m.unlock}));
+    return `<div class="move">
+      <div><b>${esc(m.label)}</b><div class="eff ${m.kind==='degree'?'big':''}">${EFFORT[m.effort]}${m.kind==='degree'?' · big commitment':''}</div></div>
+      <div class="gain ${m.unlock.length?'':'zero'}"><strong>+${m.unlock.length}</strong> ready</div>
+      <div class="sub">${m.unlock.length?'Opens: '+m.unlock.map(esc).join(', ')+'. ':''}${m.closer?`Closes a gap in ${m.closer} more role${m.closer>1?'s':''}.`:''}</div>
+      <button type="button" class="linkbtn addplan" data-addmove="${data}" ${inPlan?'disabled':''}>${inPlan?'In your plan':'+ Add to plan'}</button>
+    </div>`;}).join('');
+  let note='';
+  if(deg&&best){
+    const bs=best.unlock.length, ds=deg.unlock.length;
+    note = bs>=ds
+      ? `<div class="callout"><b>${esc(best.label)}</b> opens ${bs} role${bs===1?'':'s'}. <b>${esc(deg.label)}</b> opens ${ds}. A shorter step can do as much as a new degree here.</div>`
+      : `<div class="callout">Here a degree opens the most roles (${ds}). Weigh that against its time and cost, and check whether your ready roles lead the same way.</div>`;
+  }
+  return `<section class="moves group" aria-labelledby="movesTitle"><h2 id="movesTitle">Your next moves</h2>
+    <p>One step at a time: how many roles in your categories each step would make ready to apply. Skills come before degrees.</p>
+    ${rows}${note}</section>`;
+}
+
+/* ---------- step 4 entry: check a posting the user found (keyword rules stand in for Claude) ---------- */
+const SAMPLE_POSTS = [
+`Data Analyst, Operations Insights
+Halsted Street Logistics · Chicago, IL · Hybrid
+
+About the role
+You will build weekly reports and dashboards for our operations team.
+
+Requirements
+- Bachelor's degree in economics, statistics, business or a related field, or equivalent experience
+- Working knowledge of SQL
+- Excel (pivot tables, lookups)
+- Strong communication skills and comfort working with stakeholders
+
+Preferred qualifications
+- Master's degree
+- Experience with Tableau or Power BI
+- Python for data analysis`,
+`Marketing Associate
+Northwind Wellness · Remote (US)
+
+What you need
+- Bachelor's degree in marketing, communications or business
+- 1+ years of experience in social media or content marketing
+- Strong copywriting skills
+- Familiarity with Google Analytics
+
+Nice to have
+- SEO experience
+- Google Analytics certification
+- Self-starter who thrives in a fast-paced environment`,
+`Registered Nurse, Medical/Surgical (New Graduates Welcome)
+Charles River Hospital · Boston, MA · On-site
+
+Minimum qualifications
+- Bachelor of Science in Nursing (BSN)
+- Active RN license, or eligible to sit for the NCLEX
+- At least one clinical rotation or internship
+
+Preferred
+- 1 year of acute care experience
+- Excellent attention to detail`];
+
+const SKILL_ALIASES = {"Power BI":/power ?bi/,"JavaScript":/javascript|\bjs\b|react/,"Agile / Scrum":/agile|scrum/,
+  "Accounting (GAAP)":/\bgaap\b|bookkeeping/,"Financial modeling":/financial model/,"Adobe Creative Suite":/adobe|photoshop|illustrator|indesign/,
+  "CAD":/\bcad\b|autocad|solidworks/,"Social media":/social media/,"Customer service":/customer service|client-facing/,
+  "Public speaking":/public speaking|presentation skills/,"Project management":/project management/,"Google Analytics":/google analytics(?! cert)/,
+  "Excel":/\bexcel\b|spreadsheet/,"R":/(^|[\s,(\/])r([\s,)\/]|$)/,"Git":/\bgit\b|github/,"SEO":/\bseo\b/,"Copywriting":/copywrit/};
+const VAGUE=/communicat|stakeholder|ambigu|self-starter|fast-paced|team player|attention to detail|passion|detail-oriented|interpersonal|problem.solving|people skills|motivated/;
+const WORDNUM={one:1,two:2,three:3,four:4,five:5};
+const CAT_WORDS={data:/\bdata\b|analytics|insight|\bbi\b/,business:/business analyst|consult/,finance:/financ|accountant|accounting|credit|audit/,
+  software:/software|developer|frontend|backend|full.?stack/,product:/product (manager|analyst)/,marketing:/marketing|\bseo\b|content|communications|brand/,
+  sales:/\bsales\b|account executive|business development/,customer:/customer|client support|success/,hr:/\bhr\b|human resources|recruit|talent/,
+  operations:/operations|supply chain|logistics/,project:/project|program manager/,design:/design|\bux\b/,engineering:/mechanical|civil|electrical/,
+  healthcare:/nurse|nursing|clinical|health|medical/,education:/teacher|teaching|instruction|curriculum/,legal:/legal|paralegal|\blaw\b/,admin:/administrative|office coordinator|assistant/};
+
+function skillHits(line){
+  return SKILLS.filter(s=>{ const re=SKILL_ALIASES[s]||new RegExp('(^|[^a-z])'+reEsc(s.toLowerCase())+'([^a-z]|$)'); return re.test(line); });
+}
+function parsePosting(text){
+  const raw=text.split('\n').map(x=>x.trim()).filter(Boolean);
+  const isHeader=l=>l.length<45&&!/^[-•*·]/.test(l)&&/requir|qualif|must have|what you need|you have|you bring|minimum|basic|prefer|nice to have|bonus|desired|plus/i.test(l);
+  const firstHeader=raw.findIndex(isHeader);
+  let section='required'; const reqs=[];
+  raw.forEach((l,i)=>{
+    const low=l.toLowerCase();
+    if(isHeader(l)){ section=/prefer|nice to have|bonus|desired|plus/.test(low)?'preferred':'required'; return; }
+    if(firstHeader>=0&&i<firstHeader) return;
+    const s=/preferred|a plus|nice to have|desired/.test(low)?'preferred':section;
+    const before=reqs.length;
+    const strong=/advanced|proficien|expert|strong|deep/.test(low);
+    // degree
+    let lvl=null;
+    if(/ph\.?d|doctora/.test(low)) lvl=4; else if(/master|\bms\b|m\.s\.|mba/.test(low)) lvl=3;
+    else if(/bachelor|\bbsn\b|\bba\b|\bbs\b|b\.a\.|b\.s\.|undergraduate degree|college degree|4-year degree/.test(low)) lvl=2; else if(/associate('s)? degree/.test(low)) lvl=1;
+    if(lvl){
+      const fields=FIELDS.filter(f=>f!=='other'&&low.includes(f)); if(/\bbsn\b/.test(low)&&!fields.includes('nursing')) fields.push('nursing');
+      const r={s,k:'degree',level:lvl,t:l.replace(/^[-•*·]\s*/,'')};
+      if(fields.length) r.fields=fields; // "or a related field" is read strictly here; Claude would read it more flexibly
+      if(/equivalent/.test(low)){ const m=low.match(/(\d+)\+?\s*years?/); r.alt={years:m?+m[1]:4}; }
+      reqs.push(r);
+    }
+    // skills
+    const sk=skillHits(low);
+    if(sk.length>1&&/\bor\b/.test(low)) reqs.push({s,k:'skill',any:sk,level:strong?2:1,t:l.replace(/^[-•*·]\s*/,'')});
+    else sk.forEach(x=>reqs.push({s,k:'skill',skill:x,level:strong?2:1,t:(strong?'Advanced ':'')+x}));
+    // certifications
+    Object.entries(CERT_PATTERNS).forEach(([c,re])=>{ if(re.test(low)) reqs.push({s,k:'cert',cert:c,t:l.replace(/^[-•*·]\s*/,'')}); });
+    // experience
+    if(!lvl){
+      const ym=low.match(/(\d+)\+?\s*(?:years?|yrs?)/); if(ym) reqs.push({s,k:'exp',years:+ym[1],t:l.replace(/^[-•*·]\s*/,'')});
+    }
+    if(/internship|clinical rotation|co-op/.test(low)){
+      const m=low.match(/(\d+|one|two|three)\s+(?:\w+\s+)?(?:internship|clinical rotation|co-op)/); const n=m?(WORDNUM[m[1]]||+m[1]):1;
+      reqs.push({s,k:'exp',internships:n,t:l.replace(/^[-•*·]\s*/,'')});
+    }
+    if(reqs.length===before){
+      if(VAGUE.test(low)) reqs.push({s:s==='preferred'?'preferred':'unclear',k:'other',t:`"${l.replace(/^[-•*·]\s*/,'')}"`});
+      else if(/^[-•*·]/.test(l)) reqs.push({s:s==='preferred'?'preferred':'unclear',k:'other',t:`"${l.replace(/^[-•*·]\s*/,'')}"`,unread:true});
+    }
+  });
+  const title=raw[0]||'Your job posting';
+  const meta=(raw[1]||'');
+  const org=meta.split(/·|\||—| - /)[0].trim()||'Employer not stated';
+  const lowAll=text.toLowerCase();
+  const loc=CITIES.find(c=>lowAll.includes(c.toLowerCase()))||'Location not stated';
+  const mode=/remote/.test(lowAll)?'remote':/hybrid/.test(lowAll)?'hybrid':/on-?site|in office|in-person/.test(lowAll)?'onsite':null;
+  let type='business', best=-1;
+  Object.entries(CAT_WORDS).forEach(([k,re])=>{ const sc=(re.test(title.toLowerCase())?3:0)+((lowAll.match(new RegExp(re.source,'g'))||[]).length>0?1:0); if(sc>best){best=sc;type=k;} });
+  return {id:'YOURS',title,org,type,loc:loc,mode,posted:SNAPSHOT,reqs,custom:true};
+}
+function runCheck(){
+  const text=$('#posting').value.trim();
+  if(!text){ $('#checkOut').innerHTML='<div class="empty">Paste a job posting first, or try one of the examples.</div>'; return; }
+  state.checked=parsePosting(text); state.open='YOURS'; renderCheck();
+}
+function renderCheck(){
+  const p=readProfile(), job=state.checked;
+  if(!job.reqs.length){ $('#checkOut').innerHTML='<div class="empty">No requirements found. Paste the part of the posting that lists qualifications.</div>'; return; }
+  const a=analyse(job,p);
+  const n=s=>job.reqs.filter(r=>r.s===s).length, unread=job.reqs.filter(r=>r.unread).length;
+  const label={ready:'Ready to apply',confirm:'Ready, needs confirmation',advanced:'Work toward: gaps remain',excluded:'Outside your location or work-mode settings'}[a.status];
+  const sim=JOBS.filter(j=>j.type===job.type).map(j=>analyse(j,p)).filter(x=>x.status!=='excluded')
+    .sort((x,y)=>RANK[x.status]-RANK[y.status]||y.fit-x.fit).slice(0,4);
+  $('#checkOut').innerHTML=`<section class="verdict">
+      <div class="verdict-head"><h2>${esc(label)}</h2><span class="cat">Read ${job.reqs.length} requirements: ${n('required')} required, ${n('preferred')} preferred, ${n('unclear')} unclear${unread?` (${unread} the rules could not read)`:''}. Category guess: ${esc(TYPES[job.type])}.</span></div>
+      ${a.conflict?`<div class="notice">This role does not match your location or work-mode settings: ${esc(a.conflict)}.</div>`:''}
+      <div class="list">${card(a,p)}</div>
+    </section>
+    <section class="group"><div class="ghead"><h2>Similar roles to explore</h2><p>${esc(TYPES[job.type])} roles in the sample, checked against the same profile.</p></div>
+      <div class="list">${sim.map(x=>card(x,p)).join('')||'<div class="empty">No similar roles in the sample.</div>'}</div></section>`;
+}
+
+/* ---------- my plan (step 7) ---------- */
+function findJob(id){ return id==='YOURS'?state.checked:JOBS.find(j=>j.id===id); }
+function planText(p){
+  const lines=['My CareerPath AI plan',''];
+  const saved=[...state.saved].map(findJob).filter(Boolean).map(j=>analyse(j,p));
+  lines.push('Roles I saved:');
+  if(!saved.length) lines.push('- none yet');
+  saved.forEach(a=>{ lines.push(`- ${a.job.title}, ${a.job.org} (${a.job.loc}): ${BADGE[a.status]?BADGE[a.status][1]:'outside my constraints'}`);
+    nextActions(a,p).slice(0,3).forEach(([t])=>lines.push(`    · ${t}`)); });
+  lines.push('','Steps I plan to take:');
+  if(!state.moves.length) lines.push('- none yet');
+  state.moves.forEach(m=>lines.push(`- ${m.label} (${m.effort})${m.unlock&&m.unlock.length?`: opens ${m.unlock.join(', ')}`:''}`));
+  return lines.join('\n');
+}
+function renderPlan(){
+  const p=readProfile();
+  const saved=[...state.saved].map(findJob).filter(Boolean).map(j=>analyse(j,p));
+  const savedHtml=saved.length?saved.map(a=>{const [bc,bl]=BADGE[a.status]||['b-withheld','Outside your constraints'];
+    return `<div class="plan-item"><div><b>${esc(a.job.title)}</b> <span class="badge ${bc}">${bl}</span><p class="org">${esc(a.job.org)} · ${esc(a.job.loc)}</p></div>
+      <button class="linkbtn" data-save="${a.job.id}">Remove</button></div>`;}).join('')
+    :'<p class="hint">Save roles with ☆ Save to plan on any job card.</p>';
+  const movesHtml=state.moves.length?state.moves.map(m=>`<div class="plan-item"><div><b>${esc(m.label)}</b><p class="org">${esc(m.effort)}${m.unlock&&m.unlock.length?` · opens ${m.unlock.map(esc).join(', ')}`:''}</p></div>
+      <button class="linkbtn" data-dropmove="${esc(m.label)}">Remove</button></div>`).join('')
+    :'<p class="hint">Add steps from <a href="#find">Your next moves</a> on the Find jobs page.</p>';
+  $('#view-plan').innerHTML=`
+    <section class="plan-sec"><h2>Roles I saved</h2>${savedHtml}</section>
+    <section class="plan-sec"><h2>Steps I plan to take</h2>${movesHtml}</section>
+    <section class="plan-sec"><h2>Take it with you</h2>
+      <p class="hint" style="margin:0 0 10px">Your plan stays in this browser. Copy it into your notes or send it to a career adviser.</p>
+      <pre class="plantext" id="planText">${esc(planText(p))}</pre>
+      <div class="row" style="margin-top:10px"><button class="btn" id="copyPlan" type="button">Copy plan</button>
+        <button class="linkbtn" id="clearPlan" type="button">Clear plan</button></div>
+    </section>`;
+}
+function copyPlan(){
+  const text=planText(readProfile());
+  const fallback=()=>{ const el=$('#planText'); const r=document.createRange(); r.selectNodeContents(el); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast('Selected. Press Cmd+C or Ctrl+C to copy'); };
+  try{ navigator.clipboard.writeText(text).then(()=>toast('Plan copied'),fallback); }catch(e){ fallback(); }
+}
+
+/* ---------- views ---------- */
+const VIEWS=['find','check','plan'];
+function currentView(){ const h=location.hash.slice(1); return VIEWS.includes(h)?h:'find'; }
+function showView(){
+  const v=currentView();
+  VIEWS.forEach(x=>{ $('#view-'+x).hidden=x!==v; });
+  document.querySelectorAll('.tabs a').forEach(a=>a.setAttribute('aria-current',a.dataset.view===v?'page':'false'));
+  if(v==='plan') renderPlan();
+  if(v==='check'&&state.checked) renderCheck();
+}
+window.addEventListener('hashchange',showView);
+
+pickSample('Alex');
+showView();
+</script>
